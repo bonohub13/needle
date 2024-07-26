@@ -1,22 +1,15 @@
 /* Hide console when running a release build under Windows */
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod app_base;
-
-use app_base::AppBase;
-use eframe::egui;
+use needle_core;
+use winit::event_loop::EventLoop;
 
 const APP_NAME: &'static str = "needle";
 
-fn main() -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1920.0, 1080.0]),
-        ..Default::default()
-    };
+fn main() -> anyhow::Result<()> {
+    let event_loop = EventLoop::new()?;
+    let app_info = needle_core::AppInfo::new("needle", 1);
+    let app_base = needle_core::AppBase::new(&event_loop, &app_info);
 
-    eframe::run_native(
-        APP_NAME,
-        options,
-        Box::new(|_cc| Box::new(AppBase::new(APP_NAME))),
-    )
+    Ok(())
 }

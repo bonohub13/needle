@@ -1,0 +1,15 @@
+[package]
+name = "needle-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+ash = "0.38.0"
+ash-window = "0.13.0"
+glm = "0.2.3"
+gpu-allocator = "0.26.0"
+offset = "0.1.4"
+ordered-float = "4.2.1"
+raw-window-handle = "0.6.2"
+winit = "0.29.12"
