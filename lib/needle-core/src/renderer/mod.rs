@@ -1,6 +1,7 @@
-use crate::{device::Device, swapchain::Swapchain, window::Window};
+use crate::{device::Device, swapchain::Swapchain, utils::is_debug_build, window::Window};
 use anyhow::{bail, Result};
 use ash::vk;
+use std::any::type_name;
 use winit::event_loop::ControlFlow;
 
 pub struct Renderer {
@@ -26,6 +27,10 @@ impl Renderer {
     }
 
     pub fn destroy(&mut self, device: &Device) {
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         unsafe {
             device
                 .device()
@@ -33,6 +38,10 @@ impl Renderer {
         }
         self.command_buffers.clear();
         self.swapchain.destroy(device);
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
+        }
     }
 
     /* Private functions */

@@ -1,6 +1,7 @@
-use crate::device::Device;
+use crate::{device::Device, utils::is_debug_build};
 use anyhow::{Context, Result};
 use ash::{khr, vk};
+use std::any::type_name;
 
 pub struct Swapchain {
     image_format: vk::Format,
@@ -104,6 +105,10 @@ impl Swapchain {
     pub fn destroy(&mut self, device: &Device) {
         let device = device.device();
 
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         self.image_views
             .iter()
             .for_each(|image_view| unsafe { device.destroy_image_view(*image_view, None) });
@@ -136,6 +141,10 @@ impl Swapchain {
                 device.destroy_semaphore(self.render_finished_semaphores[index], None);
                 device.destroy_semaphore(self.image_available_semaphores[index], None);
             }
+        }
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
         }
     }
 

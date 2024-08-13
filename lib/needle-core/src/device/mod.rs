@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 use ash::{ext::debug_utils, khr::swapchain, vk};
 #[allow(deprecated)]
 use raw_window_handle::HasRawDisplayHandle;
-use std::ffi::CStr;
+use std::{any::type_name, ffi::CStr};
 
 pub struct Device {
     entry: ash::Entry,
@@ -58,6 +58,10 @@ impl Device {
     }
 
     pub fn destroy(&self) {
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         unsafe {
             self.device.destroy_command_pool(self.command_pool, None);
             self.device.destroy_device(None);
@@ -66,6 +70,10 @@ impl Device {
                 self.debug_messenger.destroy();
             }
             self.instance.destroy_instance(None);
+        }
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
         }
     }
 

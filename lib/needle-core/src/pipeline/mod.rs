@@ -1,7 +1,7 @@
-use crate::device::Device;
+use crate::{device::Device, utils::is_debug_build};
 use anyhow::{Context, Result};
 use ash::{util::read_spv, vk};
-use std::{ffi::CStr, fs::File};
+use std::{any::type_name, ffi::CStr, fs::File};
 
 pub mod config;
 pub mod vertex;
@@ -155,9 +155,17 @@ impl Pipeline {
     pub unsafe fn destroy(&mut self, device: &Device) {
         let device = device.device();
 
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         device.destroy_shader_module(self.frag_shader_module, None);
         device.destroy_shader_module(self.vert_shader_module, None);
         device.destroy_pipeline(self.graphics_pipeline, None);
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
+        }
     }
 
     /* Private functions */

@@ -1,8 +1,9 @@
-use crate::window::Window;
+use crate::{utils::is_debug_build, window::Window};
 use anyhow::Result;
 use ash::{khr::surface, vk};
 #[allow(deprecated)]
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use std::any::type_name;
 
 pub struct Surface {
     instance: surface::Instance,
@@ -29,7 +30,15 @@ impl Surface {
     }
 
     pub unsafe fn destroy(&self) {
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         self.instance.destroy_surface(self.surface, None);
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
+        }
     }
 
     #[inline]

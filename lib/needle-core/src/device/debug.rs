@@ -1,5 +1,9 @@
+use crate::utils::is_debug_build;
 use ash::{ext::debug_utils, vk};
-use std::ffi::{c_void, CStr};
+use std::{
+    any::type_name,
+    ffi::{c_void, CStr},
+};
 
 pub struct DebugUtilsMessenger {
     instance: debug_utils::Instance,
@@ -62,8 +66,16 @@ impl DebugUtilsMessenger {
     }
 
     pub unsafe fn destroy(&self) {
+        if is_debug_build() {
+            println!("Performing cleanup procedure for {}", type_name::<Self>());
+        }
+
         self.instance
             .destroy_debug_utils_messenger(self.debug_utils_messenger, None);
+
+        if is_debug_build() {
+            println!("Completed cleanup procedure for {}", type_name::<Self>());
+        }
     }
 
     #[inline]
