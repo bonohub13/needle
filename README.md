@@ -6,8 +6,8 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/) and download the executable.
-- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.1/needle.exe)
-- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.1/needle)
+- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle.exe)
+- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle)
 
 ## Getting Help
 This is a project that is done on my spare time. So please bear that in mind. \
