@@ -1,12 +1,14 @@
 [package]
-name = "needle"
+name = "needle-core"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0.93"
+chrono = "0.4.38"
 env_logger = "0.11.5"
+glyphon = "0.7.0"
 log = "0.4.22"
-needle-core = { version = "0.1.0", path = "needle-core" }
 pollster = "0.4.0"
+wgpu = "23.0.0"
 winit = { version = "0.29", features = ["rwh_05"] }

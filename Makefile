@@ -1,18 +1,12 @@
-SHELL := bash
-CARGO := $(shell which cargo)
-PWD := $(shell pwd)
-PROJECT_NAME := $(shell pwd | sed "s#.*/##")
-DOCKER_IMAGE_NAME := $(shell pwd | sed "s#.*/##" | tr [:upper:] [:lower:])
-BIN := ${PROJECT_NAME}
-SRC_DIR := src
-LIB_DIR := 
-CARGO_TOML := Cargo.toml
+CARGO := cargo
+NEEDLE_CORE := needle-core
 
 all: build run
 
 # Rust code
 clean:
 	$(CARGO) clean
+	(cd $(NEEDLE_CORE) && $(CARGO) clean)
 
 fmt:
 	$(CARGO) fmt
@@ -23,31 +17,5 @@ build: fmt
 release: fmt
 	$(CARGO) build --release
 
-run:
-	./target/debug/${BIN}
-
-build-docker-image:
-	cp Cargo.toml docker
-	docker build . -t ${PROJECT_NAME}/linux -f docker/Dockerfile.linux
-	rm docker/Cargo.toml
-
-rebuild-docker-image:
-	cp Cargo.toml docker
-	docker build . -t ${DOCKER_IMAGE_NAME}/linux -f docker/Dockerfile.linux --no-cache
-	rm docker/Cargo.toml
-
-docker-build:
-	docker run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}/linux bash \
-		-c "make build"
-
-docker-release:
-	docker run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}/linux bash \
-		-c "make release"
-
-docker-debug:
-	docker run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}/linux bash
-
-docker-run: docker-build run
-
-docker-run-release: docker-release
-	./target/release/${BIN}
+run: clean
+	$(CARGO) run --release
