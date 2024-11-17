@@ -16,7 +16,9 @@ fn main() -> Result<()> {
     let window = WindowBuilder::new()
         .with_title(APP_NAME)
         .build(&event_loop)?;
+    let frame_cap = std::time::Duration::from_secs_f64(1.0 / 30.0); // 30 fps
     let mut app = pollster::block_on(State::new(&window, TimeFormat::HourMinSec, 5.0))?;
+    let mut next_frame = std::time::Instant::now();
 
     event_loop.run(move |event, control_flow| match event {
         Event::WindowEvent {
@@ -50,7 +52,10 @@ fn main() -> Result<()> {
                 };
 
                 match app.render() {
-                    Ok(_) => (),
+                    Ok(_) => {
+                        next_frame += frame_cap;
+                        std::thread::sleep(next_frame - std::time::Instant::now());
+                    }
                     Err(err) => match err {
                         NeedleError::Lost | NeedleError::Outdated => app.resize(&app.size()),
                         NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {
