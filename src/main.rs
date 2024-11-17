@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use anyhow::Result;
 use needle_core::{NeedleError, State, TimeFormat};
 use winit::{

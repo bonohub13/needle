@@ -18,9 +18,11 @@ clean:
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 
 pkg: clean pkg-linux_docker pkg-windows_docker
-	@sha256sum target/x86_64-unknown-linux-gnu/release/needle \
+	@cp -v target/x86_64-unknown-linux-gnu/release/needle .
+	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe .
+	@sha256sum needle \
 		| tee needle.sha256
-	@sha256sum target/x86_64-pc-windows-gnu/release/needle.exe \
+	@sha256sum needle.exe \
 		| tee needle.exe.sha256
 
 fmt:
