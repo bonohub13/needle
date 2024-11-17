@@ -17,23 +17,11 @@ clean:
 	@$(CARGO) clean
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 
-pkg: clean pkg-linux_docker pkg-windows_docker compress
+pkg: clean pkg-linux_docker pkg-windows_docker
 	@sha256sum target/x86_64-unknown-linux-gnu/release/needle \
 		| tee needle.sha256
 	@sha256sum target/x86_64-pc-windows-gnu/release/needle.exe \
 		| tee needle.exe.sha256
-	@sha256sum source_code.tar.gz \
-		| tee source_code.tar.gz.sha256
-
-compress:
-	@( \
-		cd ../ && \
-		$(TAR) -I pigz -cvf /tmp/source_code.tar.gz \
-			--exclude='needle/target' \
-			--exclude='needle/needle-core/target' \
-			needle \
-	)
-	@mv -v /tmp/source_code.tar.gz .
 
 fmt:
 	@$(CARGO) fmt
