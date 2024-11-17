@@ -5,7 +5,7 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 ![Example of Needle running on Linux](./doc/resources/needle.gif)
 
 ## Installation
-Go to [releases](https://github.com/bonohub13/needle/releases/) and download the executable.
+Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
 - Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle.exe)
 - Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle)
 
