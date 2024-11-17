@@ -20,7 +20,15 @@ He was trying to get a clock to be up on his stream, but the service he was usin
 - Crashed a LOT.
 - Due to it being a web service, it was littered with ads to the point of being unusable.
 
-To address these problems I developed Needle, so he could have a relient app that would be free from ads.
+To address these problems I developed Needle, so he could have a relient app that would be free from ads. \
+The direction of needle consists of these criteria.
+1. K.I.S.S (Keep It Simple Stupid)
+2. Usability is the utmost priority.
+    - Making needle a feature rich clock is great, but cluttering the app with features \
+    to the point where the user feels overwelmed is not.
+    - No minor features that fills a niche. (If you want it, fork it)
+3. Freedom to do whatever you want.
+    - Give the users the capability to do whatever they want.
 
 ## TODO List <a name="todo_list"></a>
 Following features are to be added in the future. \
