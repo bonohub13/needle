@@ -1,5 +1,6 @@
 CARGO := cargo
 DOCKER := docker
+TAR := tar
 
 NEEDLE_CORE := needle-core
 TARGET_LINUX := x86_64-unknown-linux-gnu
@@ -13,33 +14,43 @@ all: build run
 
 # Rust code
 clean:
-	$(CARGO) clean
-	(cd $(NEEDLE_CORE) && $(CARGO) clean)
+	@$(CARGO) clean
+	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 
 pkg: clean pkg-linux_docker pkg-windows_docker
 
+compress:
+	@( \
+		cd ../ && \
+		$(TAR) -I pigz -cvf /tmp/source_code.tar.gz \
+			--exclude='needle/target' \
+			--exclude='needle/needle-core/target' \
+			needle \
+	)
+	@mv -v /tmp/source_code.tar.gz .
+
 fmt:
-	$(CARGO) fmt
+	@$(CARGO) fmt
 
 build: fmt
-	$(CARGO) build
+	@$(CARGO) build
 
 release: fmt
-	$(CARGO) build --release
+	@$(CARGO) build --release
 
 run: clean
-	$(CARGO) run --release
+	@$(CARGO) run --release
 
 pkg-linux:
-	$(CARGO) build --release --target=${TARGET_LINUX}
+	@$(CARGO) build --release --target=${TARGET_LINUX}
 
 pkg-windows:
-	$(CARGO) build --release --target=${TARGET_WINDOWS}
+	@$(CARGO) build --release --target=${TARGET_WINDOWS}
 
 pkg-linux_docker:
-	$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${LINUX_IMAGE_TAG} \
+	@$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${LINUX_IMAGE_TAG} \
 		bash -c "make pkg-linux"
 
 pkg-windows_docker:
-	$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${WINDOWS_IMAGE_TAG} \
+	@$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${WINDOWS_IMAGE_TAG} \
 		bash -c "make pkg-windows"
