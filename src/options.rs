@@ -124,10 +124,10 @@ impl Display for AppOptions {
                     "                               If path of config file is not specified, it will default to default path",
                     "       --gen-config [FILENAME] Generates config file",
                     "                               If path is specified, config file is generated to the specified path",
-                    "                               Default path:",
-                    "                               - Linux: $HOME/.config/needle/config.toml",
-                    "                               - Windows: %AppData%\\Roaming\\bonohub13\\needle\\config\\config.toml",
-                    "   -v, --version           Print version info and exit",
+                    "                                   Default path:",
+                    "                                   - Linux: $HOME/.config/needle/config.toml",
+                    "                                   - Windows: %AppData%\\Roaming\\bonohub13\\needle\\config\\config.toml",
+                    "   -v, --version               Print version info and exit",
                 ];
 
                 lines
