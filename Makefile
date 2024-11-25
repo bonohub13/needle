@@ -34,7 +34,7 @@ build: fmt
 release: fmt
 	@$(CARGO) build --release
 
-run: clean
+run:
 	@$(CARGO) run --release
 
 pkg-linux:

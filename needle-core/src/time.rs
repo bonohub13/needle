@@ -1,6 +1,8 @@
 use chrono::{DateTime, Local, Timelike};
+use serde::Deserialize;
+use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
 pub enum TimeFormat {
     HourMinSec,
     HourMinSecMSec,
@@ -50,5 +52,16 @@ impl Time {
         }
 
         format!("{}{}", prefix, value)
+    }
+}
+
+impl Display for TimeFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let format = match self {
+            TimeFormat::HourMinSec => "HourMinSec",
+            TimeFormat::HourMinSecMSec => "HourMinSecMSec",
+        };
+
+        write!(f, "{}", format)
     }
 }

@@ -1,79 +1,47 @@
 #![windows_subsystem = "windows"]
-use anyhow::Result;
-use needle_core::{NeedleError, State, TimeFormat};
-use winit::{
-    event::{ElementState, Event, KeyEvent, WindowEvent},
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
-    window::WindowBuilder,
-};
+mod app;
+mod options;
 
-const APP_NAME: &'static str = "needle";
+use app::*;
+use options::*;
+
+use anyhow::{bail, Result};
+use needle_core::NeedleConfig;
+#[cfg(target_os = "windows")]
+use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
 
 fn main() -> Result<()> {
+    // Enable CLI for Windows (A workaround for #![windows_subsystem = "windows"])
+    //  Source: https://github.com/rust-lang/rust/issues/67159#issuecomment-987882771 (by phiresky)
+    #[cfg(target_os = "windows")]
+    unsafe {
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+
     env_logger::init();
 
-    let event_loop = EventLoop::new()?;
-    let window = WindowBuilder::new()
-        .with_title(APP_NAME)
-        .build(&event_loop)?;
-    let frame_cap = std::time::Duration::from_secs_f64(1.0 / 30.0); // 30 fps
-    let mut app = pollster::block_on(State::new(&window, TimeFormat::HourMinSec, 5.0))?;
-    let mut next_frame = std::time::Instant::now();
+    let app_option = AppOptions::new();
+    let mut config_path = None;
 
-    event_loop.run(move |event, control_flow| match event {
-        Event::WindowEvent {
-            ref event,
-            window_id,
-        } if window_id == app.window().id() => match event {
-            WindowEvent::CloseRequested
-            | WindowEvent::KeyboardInput {
-                event:
-                    KeyEvent {
-                        state: ElementState::Pressed,
-                        physical_key: PhysicalKey::Code(KeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => control_flow.exit(),
-            WindowEvent::Resized(physical_size) => {
-                // Resize Window
-                app.resize(physical_size);
+    for opt in app_option.iter() {
+        match opt {
+            AppOptions::Help | AppOptions::Version => {
+                println!("{}", opt);
+
+                return Ok(());
             }
-            WindowEvent::RedrawRequested => {
-                // Main Render Loop
-                app.window().request_redraw();
-                match app.update() {
-                    Ok(_) => (),
-                    Err(err) => {
-                        log::error!("Failed to update frame: {}", err);
-
-                        control_flow.exit();
-                    }
-                };
-
-                match app.render() {
-                    Ok(_) => {
-                        next_frame += frame_cap;
-                        std::thread::sleep(next_frame - std::time::Instant::now());
-                    }
-                    Err(err) => match err {
-                        NeedleError::Lost | NeedleError::Outdated => app.resize(&app.size()),
-                        NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {
-                            log::error!("OutOfMemory");
-                            control_flow.exit();
-                        }
-                        NeedleError::Timeout => {
-                            log::warn!("Surface Timeout")
-                        }
-                        _ => (),
-                    },
-                }
+            AppOptions::GenerateConfig(path) => {
+                return NeedleConfig::config(Some(path));
             }
-            _ => {}
-        },
-        _ => {}
-    })?;
+            AppOptions::Unknown(_) => bail!("{}", opt),
+            AppOptions::ConfigFilePath(path) => {
+                config_path = Some(path.as_str());
+            }
+            _ => (),
+        }
+    }
 
-    Ok(())
+    let config = NeedleConfig::from(config_path)?;
+
+    run(&config)
 }

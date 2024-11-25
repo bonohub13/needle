@@ -1,9 +1,11 @@
 mod app;
 mod error;
+mod renderer;
 mod time;
 
 pub use app::*;
 pub use error::*;
+pub use renderer::*;
 pub use time::*;
 pub use wgpu::{include_spirv_raw, include_wgsl};
 

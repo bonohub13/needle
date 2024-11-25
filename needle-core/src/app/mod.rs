@@ -1,25 +1,21 @@
-use crate::{NeedleErr, NeedleError, NeedleLabel, Time, TimeFormat};
+mod config;
+
+pub use config::*;
+
+use crate::{renderer::TextRenderer, NeedleErr, NeedleError, NeedleLabel, Time};
 use anyhow::{Context, Result};
-use glyphon::{Buffer, FontSystem, SwashCache, TextAtlas, TextRenderer, Viewport};
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct State<'a> {
     window: &'a Window,
-    time_formatter: Time,
+    app_config: NeedleConfig,
     size: PhysicalSize<u32>,
     surface: Surface<'a>,
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
-
-    font_system: FontSystem,
-    swash_cache: SwashCache,
-    viewport: Viewport,
-    atlas: TextAtlas,
-    text_renderer: glyphon::TextRenderer,
-    text_buffer: glyphon::Buffer,
-    text_scale: f32,
+    text_renderer: TextRenderer,
 }
 
 impl<'a> State<'a> {
@@ -29,8 +25,7 @@ impl<'a> State<'a> {
     #[allow(dead_code)]
     const FRAGMENT_SHADER_MAIN: &'static str = "fs_main";
 
-    pub async fn new(window: &'a Window, time_format: TimeFormat, text_scale: f32) -> Result<Self> {
-        let time_formatter = Time::new(time_format);
+    pub async fn new(window: &'a Window, config: &NeedleConfig) -> Result<Self> {
         let size = window.inner_size();
         let scale_factor = window.scale_factor();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -67,7 +62,7 @@ impl<'a> State<'a> {
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
-        let config = SurfaceConfiguration {
+        let surface_config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
@@ -79,40 +74,24 @@ impl<'a> State<'a> {
         };
 
         // Text Rendering System
-        let mut font_system = FontSystem::new();
-        let swash_cache = SwashCache::new();
-        let cache = glyphon::Cache::new(&device);
-        let viewport = Viewport::new(&device, &cache);
-        let mut atlas = TextAtlas::new(&device, &queue, &cache, surface_format);
-        let text_renderer =
-            TextRenderer::new(&mut atlas, &device, wgpu::MultisampleState::default(), None);
-        let mut text_buffer = Buffer::new(&mut font_system, glyphon::Metrics::new(30.0, 42.0));
-        let physical_width = (size.width as f64 * scale_factor) as f32;
-        let physical_height = (size.height as f64 * scale_factor) as f32;
-
-        text_buffer.set_size(
-            &mut font_system,
-            Some(physical_width),
-            Some(physical_height),
+        let text_renderer = TextRenderer::new(
+            &config.text,
+            &size,
+            scale_factor,
+            &device,
+            &queue,
+            surface_format,
         );
-        text_buffer.shape_until_scroll(&mut font_system, false);
 
         Ok(Self {
             window,
-            time_formatter,
+            app_config: *config,
             size,
             surface,
             device,
             queue,
-            config,
-
-            font_system,
-            swash_cache,
-            viewport,
-            text_buffer,
-            atlas,
+            config: surface_config,
             text_renderer,
-            text_scale,
         })
     }
 
@@ -122,20 +101,6 @@ impl<'a> State<'a> {
 
     pub const fn size(&self) -> PhysicalSize<u32> {
         self.size
-    }
-
-    pub fn text_size(&self) -> (f32, f32) {
-        let (width, total_lines) = self
-            .text_buffer
-            .layout_runs()
-            .fold((0.0, 0usize), |(width, total_lines), run| {
-                (run.line_w.max(width), total_lines + 1)
-            });
-
-        (
-            width,
-            total_lines as f32 * self.text_buffer.metrics().line_height,
-        )
     }
 
     pub fn resize(&mut self, size: &PhysicalSize<u32>) {
@@ -149,48 +114,19 @@ impl<'a> State<'a> {
 
     pub fn update(&mut self) -> Result<()> {
         let local = chrono::Local::now();
+        let time_formatter = Time::new(*self.text_renderer.format());
 
-        self.text_buffer.set_text(
-            &mut self.font_system,
-            &self.time_formatter.time_to_str(&local),
-            glyphon::Attrs::new().family(glyphon::Family::Serif),
-            glyphon::Shaping::Advanced,
-        );
-        self.viewport.update(
-            &self.queue,
-            glyphon::Resolution {
-                width: self.config.width,
-                height: self.config.height,
-            },
-        );
+        self.text_renderer
+            .set_text(&time_formatter.time_to_str(&local));
+        self.text_renderer.update(&self.queue, &self.config);
 
-        let (text_width, text_height) = self.text_size();
+        let (text_width, text_height) = self.text_renderer.text_size();
         let center = [
-            (self.size.width as f32 - text_width * self.text_scale) / 2.0,
-            (self.size.height as f32 - text_height * self.text_scale) / 2.0,
+            (self.size.width as f32 - text_width * self.text_renderer.scale()) / 2.0,
+            (self.size.height as f32 - text_height * self.text_renderer.scale()) / 2.0,
         ];
-        self.text_renderer.prepare(
-            &self.device,
-            &self.queue,
-            &mut self.font_system,
-            &mut self.atlas,
-            &self.viewport,
-            [glyphon::TextArea {
-                buffer: &self.text_buffer,
-                left: center[0],
-                top: center[1],
-                scale: self.text_scale,
-                bounds: glyphon::TextBounds {
-                    left: 0,
-                    top: 0,
-                    right: self.size.width as i32,
-                    bottom: self.size.height as i32,
-                },
-                default_color: glyphon::Color::rgb(255, 255, 255),
-                custom_glyphs: &[],
-            }],
-            &mut self.swash_cache,
-        )?;
+        self.text_renderer
+            .prepare(&self.device, &self.queue, &self.size, center[0], center[1])?;
 
         Ok(())
     }
@@ -226,10 +162,10 @@ impl<'a> State<'a> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
+                            r: self.app_config.background_color[0],
+                            g: self.app_config.background_color[1],
+                            b: self.app_config.background_color[2],
+                            a: self.app_config.background_color[3],
                         }),
                         store: wgpu::StoreOp::Store,
                     },
@@ -238,23 +174,7 @@ impl<'a> State<'a> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-
-            match self
-                .text_renderer
-                .render(&self.atlas, &self.viewport, &mut render_pass)
-            {
-                Ok(_) => (),
-                Err(err) => {
-                    return match err {
-                        glyphon::RenderError::RemovedFromAtlas => {
-                            Err(NeedleError::RemovedFromAtlas)
-                        }
-                        glyphon::RenderError::ScreenResolutionChanged => {
-                            Err(NeedleError::ScreenResolutionChanged)
-                        }
-                    }
-                }
-            }
+            self.text_renderer.render(&mut render_pass)?;
         }
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
