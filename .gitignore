@@ -1,3 +1,5 @@
 /target
 /needle-core/target
 /*.sha256
+/needle
+/needle.exe

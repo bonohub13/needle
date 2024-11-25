@@ -1,9 +1,3 @@
-<style>
-red { color: Red, font-weight: bold }
-green { color: Green, font-weight: bold }
-blue { color: Blue, font-weight: bold }
-</style>
-
 # Needle
 Local application that displays the time! \
 Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/grovesNL/glyphon) for text rendering, and written in Rust!
@@ -12,8 +6,8 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
-- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle.exe)
-- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.1-hotfix/needle)
+- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.2/needle.exe)
+- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.2/needle)
 
 ## Getting Help
 This is a project that is done on my spare time. So please bear that in mind. \
@@ -50,11 +44,11 @@ Features in the TODO List that have been implemented will be erased from the lis
     | Implemented in VersionX.Y.Z | Feature released on Version X.Y.Z                  |
 
 - Features in queue for development/in active development
-    | Date (Added) | Feature                                  | Status        |
-    |:-------------|:-----------------------------------------|:-------------:|
-    | 2024/11/17   | Configuration handler                    | High Priority |
-    | 2024/11/17   | Optional FPS limit                       | In Query      |
-    | 2024/11/17   | Optional FPS visualization               | In Query      |
-    | 2024/11/17   | Optional time format                     | In Query      |
-    | 2024/11/17   | Optional text color                      | In Query      |
-    | 2024/11/17   | Effects on text via shader code (SPIR-V) | In Query      |
+    | Date (Added) | Feature                                  | Status                       |
+    |:-------------|:-----------------------------------------|:----------------------------:|
+    | 2024/11/17   | Configuration handler                    | Implemented in Version 0.1.2 |
+    | 2024/11/17   | Optional FPS limit                       | High Priority                |
+    | 2024/11/17   | Optional FPS visualization               | High Priority                |
+    | 2024/11/17   | Optional time format                     | Implemented in Version 0.1.2 |
+    | 2024/11/17   | Optional text color                      | Implemented in Version 0.1.2 |
+    | 2024/11/17   | Effects on text via shader code (SPIR-V) | In Query                     |
