@@ -1,8 +1,4 @@
-mod config;
-
-pub use config::*;
-
-use crate::{renderer::TextRenderer, NeedleErr, NeedleError, NeedleLabel, Time};
+use crate::{renderer::TextRenderer, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, Time};
 use anyhow::{Context, Result};
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -75,7 +71,7 @@ impl<'a> State<'a> {
 
         // Text Rendering System
         let text_renderer = TextRenderer::new(
-            &config.text,
+            &config.time.config,
             &size,
             scale_factor,
             &device,
@@ -115,7 +111,7 @@ impl<'a> State<'a> {
 
     pub fn update(&mut self) -> Result<()> {
         let local = chrono::Local::now();
-        let time_formatter = Time::new(*self.text_renderer.format());
+        let time_formatter = Time::new(self.app_config.time.format);
 
         self.text_renderer
             .set_text(&time_formatter.time_to_str(&local));

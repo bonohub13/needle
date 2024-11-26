@@ -1,4 +1,4 @@
-use crate::{app::Text, NeedleErr, NeedleError, TimeFormat};
+use crate::{NeedleErr, NeedleError, Text};
 use anyhow::Result;
 use glyphon::{Buffer, FontSystem, SwashCache, TextAtlas, Viewport};
 use winit::dpi::PhysicalSize;
@@ -52,11 +52,6 @@ impl TextRenderer {
     #[inline]
     pub const fn scale(&self) -> f32 {
         self.config.scale
-    }
-
-    #[inline]
-    pub const fn format(&self) -> &TimeFormat {
-        &self.config.format
     }
 
     pub fn text_size(&self) -> [f32; 2] {

@@ -1,15 +1,24 @@
 mod app;
+mod config;
 mod error;
 mod renderer;
 mod time;
 
 pub use app::*;
+pub use config::*;
 pub use error::*;
 pub use renderer::*;
 pub use time::*;
 pub use wgpu::{include_spirv_raw, include_wgsl};
 
 use std::fmt::{Display, Formatter, Result};
+
+pub fn version_info() -> String {
+    let name = env!("CARGO_PKG_NAME");
+    let version = env!("CARGO_PKG_VERSION");
+
+    format!("{} {}", name, version)
+}
 
 #[allow(dead_code)]
 #[derive(Debug)]
