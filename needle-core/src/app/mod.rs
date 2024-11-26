@@ -12,6 +12,7 @@ pub struct State<'a> {
     queue: Queue,
     config: SurfaceConfiguration,
     text_renderer: TextRenderer,
+    fps_renderer: TextRenderer,
 }
 
 impl<'a> State<'a> {
@@ -79,6 +80,16 @@ impl<'a> State<'a> {
             surface_format,
         );
 
+        // Fps Rendering System
+        let fps_renderer = TextRenderer::new(
+            &config.fps.config,
+            &size,
+            scale_factor,
+            &device,
+            &queue,
+            surface_format,
+        );
+
         Ok(Self {
             window,
             app_config: *config,
@@ -88,6 +99,7 @@ impl<'a> State<'a> {
             queue,
             config: surface_config,
             text_renderer,
+            fps_renderer,
         })
     }
 
@@ -106,17 +118,23 @@ impl<'a> State<'a> {
             self.config.height = size.height;
             self.surface.configure(&self.device, &self.config);
             self.text_renderer.resize(size);
+            self.fps_renderer.resize(size);
         }
     }
 
-    pub fn update(&mut self) -> Result<()> {
+    pub fn update(&mut self, fps: f32) -> Result<()> {
         let local = chrono::Local::now();
         let time_formatter = Time::new(self.app_config.time.format);
 
         self.text_renderer
             .set_text(&time_formatter.time_to_str(&local));
+        self.fps_renderer.set_text(&format!("FPS: {:.3}", fps));
         self.text_renderer.update(&self.queue, &self.config);
-        self.text_renderer.prepare(&self.device, &self.queue)?;
+        self.text_renderer.prepare(5.0, &self.device, &self.queue)?;
+        if self.app_config.fps.enable {
+            self.fps_renderer.update(&self.queue, &self.config);
+            self.fps_renderer.prepare(0.0, &self.device, &self.queue)?;
+        }
 
         Ok(())
     }
@@ -165,6 +183,9 @@ impl<'a> State<'a> {
                 occlusion_query_set: None,
             });
             self.text_renderer.render(&mut render_pass)?;
+            if self.app_config.fps.enable {
+                self.fps_renderer.render(&mut render_pass)?;
+            }
         }
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();

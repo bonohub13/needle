@@ -10,76 +10,97 @@ pub struct Text {
 }
 
 impl Text {
-    const MARGIN: f32 = 5.0;
     pub fn position(
         &self,
         screen_size: &winit::dpi::PhysicalSize<u32>,
         text_size: &[f32; 2],
+        margin: f32,
     ) -> (f32, f32) {
         match self.position {
-            Position::Center => Self::center(screen_size, text_size),
-            Position::Top => Self::top(screen_size, text_size),
-            Position::Bottom => Self::bottom(screen_size, text_size),
-            Position::Left => Self::left(screen_size, text_size),
-            Position::Right => Self::right(screen_size, text_size),
+            Position::Center => self.center(screen_size, text_size),
+            Position::Top => self.top(screen_size, text_size, margin),
+            Position::Bottom => self.bottom(screen_size, text_size, margin),
+            Position::Left => self.left(screen_size, text_size, margin),
+            Position::Right => self.right(screen_size, text_size, margin),
             Position::TopLeft => {
-                let top = Self::top(screen_size, text_size);
-                let left = Self::left(screen_size, text_size);
+                let top = self.top(screen_size, text_size, margin);
+                let left = self.left(screen_size, text_size, margin);
 
                 (left.0, top.1)
             }
             Position::TopRight => {
-                let top = Self::top(screen_size, text_size);
-                let right = Self::right(screen_size, text_size);
+                let top = self.top(screen_size, text_size, margin);
+                let right = self.right(screen_size, text_size, margin);
 
                 (right.0, top.1)
             }
             Position::BottomLeft => {
-                let bottom = Self::bottom(screen_size, text_size);
-                let left = Self::left(screen_size, text_size);
+                let bottom = self.bottom(screen_size, text_size, margin);
+                let left = self.left(screen_size, text_size, margin);
 
                 (left.0, bottom.1)
             }
             Position::BottomRight => {
-                let bottom = Self::bottom(screen_size, text_size);
-                let right = Self::right(screen_size, text_size);
+                let bottom = self.bottom(screen_size, text_size, margin);
+                let right = self.right(screen_size, text_size, margin);
 
                 (right.0, bottom.1)
             }
         }
     }
 
-    fn center(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+    fn center(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+    ) -> (f32, f32) {
         (
             (screen_size.width as f32 - text_size[0]) / 2.0,
             (screen_size.height as f32 - text_size[1]) / 2.0,
         )
     }
 
-    fn top(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+    fn top(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+        margin: f32,
+    ) -> (f32, f32) {
         (
             (screen_size.width as f32 - text_size[0]) / 2.0,
-            Self::MARGIN * 2.0,
+            margin * 2.0,
         )
     }
 
-    fn bottom(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+    fn bottom(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+        margin: f32,
+    ) -> (f32, f32) {
         (
             (screen_size.width as f32 - text_size[0]) / 2.0,
-            screen_size.height as f32 - text_size[1] - (Self::MARGIN * 2.0),
+            screen_size.height as f32 - text_size[1] - (margin * 2.0),
         )
     }
 
-    fn left(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
-        (
-            Self::MARGIN,
-            (screen_size.height as f32 - text_size[1]) / 2.0,
-        )
+    fn left(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+        margin: f32,
+    ) -> (f32, f32) {
+        (margin, (screen_size.height as f32 - text_size[1]) / 2.0)
     }
 
-    fn right(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+    fn right(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+        margin: f32,
+    ) -> (f32, f32) {
         (
-            screen_size.width as f32 - text_size[0] - Self::MARGIN,
+            screen_size.width as f32 - text_size[0] - margin,
             (screen_size.height as f32 - text_size[1]) / 2.0,
         )
     }

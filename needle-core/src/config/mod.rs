@@ -9,7 +9,7 @@ pub use text::*;
 pub use time::*;
 
 use crate::{error::NeedleError, TimeFormat};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use directories::ProjectDirs;
 use serde::Deserialize;
 use std::{
@@ -24,6 +24,7 @@ use std::{
 pub struct NeedleConfig {
     pub background_color: [f64; 4],
     pub time: TimeConfig,
+    pub fps: FpsConfig,
 }
 
 impl NeedleConfig {
@@ -66,7 +67,7 @@ impl NeedleConfig {
             } else {
                 let config_file = config_file.to_string_lossy();
 
-                return Err(NeedleError::ConfigNonExistant(config_file.into()).into());
+                bail!(NeedleError::ConfigNonExistant(config_file.into()))
             }
         }
 
@@ -76,9 +77,17 @@ impl NeedleConfig {
 
         buf_reader.read_to_string(&mut read_buffer)?;
 
-        let config = toml::from_str(&read_buffer)?;
+        let config: Self = toml::from_str(&read_buffer)?;
 
-        Ok(config)
+        if config.fps.enable && !config.fps.is_valid_position() {
+            bail!(NeedleError::InvalidFpsTextPosition(
+                config.fps.config.position
+            ))
+        } else if config.fps.enable && (config.fps.config.position == config.time.config.position) {
+            bail!(NeedleError::TextPositionOverlapping)
+        } else {
+            Ok(config)
+        }
     }
 
     fn config_file(create_dir: bool) -> Result<PathBuf> {
@@ -90,14 +99,14 @@ impl NeedleConfig {
 
                 Ok(app_dir.config_dir().join(Self::CONFIG_FILE))
             }
-            None => Err(NeedleError::InvalidPath.into()),
+            None => bail!(NeedleError::InvalidPath),
         }
     }
 
     fn write(file: &Path) -> Result<()> {
         let default_config_path = Self::config_file(false)?;
         if file.exists() && file == default_config_path.as_path() {
-            return Err(NeedleError::ConfigExists.into());
+            bail!(NeedleError::ConfigExists)
         }
 
         let config = Self::default();
@@ -127,44 +136,20 @@ impl Default for NeedleConfig {
                     position: Position::Center,
                 },
             },
+            fps: FpsConfig {
+                enable: false,
+                config: Text {
+                    scale: 0.25,
+                    color: [255, 0, 0, 255],
+                    position: Position::TopRight,
+                },
+            },
         }
     }
 }
 
 impl Display for NeedleConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        /* Config:
-         *
-         * ---
-         *
-         * # Background color : [r, g, b, alpha]
-         * #  Range : (0.0 - 1.0)
-         * background = [r, g, b, alpha]
-         *
-         * # Text Settings
-         * [text]
-         * #  Time scale
-         * scale = text scale size
-         * #  Time color : [r, g, b, alpha]
-         * #      Range : (0 - 255)
-         * color = [r, g, b, alpha]
-         * #  Time format
-         * #      HourMinSec : HH:MM:SS (default)
-         * #      HourMinSecMSec : HH:MM:SS.MSec
-         * format = time format
-         * #  Position
-         * #      Center (default)
-         * #      Top
-         * #      Bottom
-         * #      Left
-         * #      Right
-         * #      TopLeft
-         * #      TopRight
-         * #      BottomLeft
-         * #      BottomRight
-         * position = text position
-         */
-
         writeln!(f, "# Background color : [r, g, b, alpha]")?;
         writeln!(f, "#  Range : (0.0 - 1.0)")?;
         writeln!(
@@ -176,6 +161,8 @@ impl Display for NeedleConfig {
             self.background_color[3]
         )?;
         writeln!(f, "{}[time]", Self::NEWLINE)?;
-        write!(f, "{}", self.time)
+        writeln!(f, "{}", self.time)?;
+        writeln!(f, "{}[fps]", Self::NEWLINE)?;
+        write!(f, "{}", self.fps)
     }
 }

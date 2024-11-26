@@ -63,8 +63,8 @@ impl TextRenderer {
             });
 
         [
-            width,
-            total_lines as f32 * self.buffer.metrics().line_height,
+            width * self.scale(),
+            total_lines as f32 * self.buffer.metrics().line_height * self.scale(),
         ]
     }
 
@@ -91,8 +91,13 @@ impl TextRenderer {
         )
     }
 
-    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<()> {
-        let (left, top) = self.config.position(&self.size, &self.text_size());
+    pub fn prepare(
+        &mut self,
+        margin: f32,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Result<()> {
+        let (left, top) = self.config.position(&self.size, &self.text_size(), margin);
 
         self.renderer.prepare(
             device,

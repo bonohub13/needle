@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub enum Position {
     Center,
     Top,

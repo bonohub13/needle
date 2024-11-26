@@ -1,3 +1,4 @@
+use crate::Position;
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
@@ -9,6 +10,8 @@ pub enum NeedleError {
     InvalidPath,
     ConfigExists,
     ConfigNonExistant(Box<str>),
+    InvalidFpsTextPosition(Position),
+    TextPositionOverlapping,
 
     // Surface related errors
     Lost,
@@ -24,17 +27,26 @@ pub enum NeedleError {
 impl Display for NeedleError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let msg = match self {
-            Self::InvalidPath => "AppConfig | Invalid Path".to_string(),
-            Self::ConfigExists => "AppConfig | Config Already Exists".to_string(),
+            Self::InvalidPath => "AppConfig | Invalid path".to_string(),
+            Self::ConfigExists => "AppConfig | Config already exists".to_string(),
             Self::ConfigNonExistant(path) => {
-                format!("AppConfig | Config File Doesn't exist ({})", path)
+                format!("AppConfig | Config file doesn't exist ({})", path)
+            }
+            Self::InvalidFpsTextPosition(pos) => {
+                format!(
+                    "AppConfig | Text position is invalid. Must be corners. ({})",
+                    pos
+                )
+            }
+            Self::TextPositionOverlapping => {
+                "AppConfig | Text position for FPS and time is overlapping".to_string()
             }
             Self::Lost => "Surface | Lost".to_string(),
             Self::Outdated => "Surface | Outdated".to_string(),
-            Self::OutOfMemory => "Surface | Out Of Memory".to_string(),
+            Self::OutOfMemory => "Surface | Out of memory".to_string(),
             Self::Timeout => "Surface | Timeout".to_string(),
-            Self::RemovedFromAtlas => "Renderer | Removed From Atlas".to_string(),
-            Self::ScreenResolutionChanged => "Renderer | Screen Resolution Changed".to_string(),
+            Self::RemovedFromAtlas => "Renderer | Removed from atlas".to_string(),
+            Self::ScreenResolutionChanged => "Renderer | Screen resolution changed".to_string(),
         };
 
         writeln!(f, "[ERROR]: {}", msg)
