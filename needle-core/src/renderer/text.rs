@@ -1,6 +1,7 @@
 use crate::{app::Text, NeedleErr, NeedleError, TimeFormat};
 use anyhow::Result;
 use glyphon::{Buffer, FontSystem, SwashCache, TextAtlas, Viewport};
+use winit::dpi::PhysicalSize;
 
 pub struct TextRenderer {
     system: FontSystem,
@@ -10,12 +11,13 @@ pub struct TextRenderer {
     renderer: glyphon::TextRenderer,
     buffer: Buffer,
     config: Text,
+    size: PhysicalSize<u32>,
 }
 
 impl TextRenderer {
     pub fn new(
         config: &Text,
-        size: &winit::dpi::PhysicalSize<u32>,
+        size: &PhysicalSize<u32>,
         scale_factor: f64,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -43,6 +45,7 @@ impl TextRenderer {
             renderer,
             buffer,
             config: *config,
+            size: *size,
         }
     }
 
@@ -56,7 +59,7 @@ impl TextRenderer {
         &self.config.format
     }
 
-    pub fn text_size(&self) -> (f32, f32) {
+    pub fn text_size(&self) -> [f32; 2] {
         let (width, total_lines) = self
             .buffer
             .layout_runs()
@@ -64,10 +67,10 @@ impl TextRenderer {
                 (run.line_w.max(width), total_lines + 1)
             });
 
-        (
+        [
             width,
             total_lines as f32 * self.buffer.metrics().line_height,
-        )
+        ]
     }
 
     pub fn set_text(&mut self, text: &str) {
@@ -77,6 +80,10 @@ impl TextRenderer {
             glyphon::Attrs::new().family(glyphon::Family::SansSerif),
             glyphon::Shaping::Advanced,
         )
+    }
+
+    pub fn resize(&mut self, size: &PhysicalSize<u32>) {
+        self.size = *size;
     }
 
     pub fn update(&mut self, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration) {
@@ -89,14 +96,9 @@ impl TextRenderer {
         )
     }
 
-    pub fn prepare(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        size: &winit::dpi::PhysicalSize<u32>,
-        position_left: f32,
-        position_top: f32,
-    ) -> Result<()> {
+    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<()> {
+        let (left, top) = self.config.position(&self.size, &self.text_size());
+
         self.renderer.prepare(
             device,
             queue,
@@ -105,14 +107,14 @@ impl TextRenderer {
             &self.viewport,
             [glyphon::TextArea {
                 buffer: &self.buffer,
-                left: position_left,
-                top: position_top,
+                left,
+                top,
                 scale: self.config.scale,
                 bounds: glyphon::TextBounds {
                     left: 0,
                     top: 0,
-                    right: size.width as i32,
-                    bottom: size.height as i32,
+                    right: self.size.width as i32,
+                    bottom: self.size.height as i32,
                 },
                 default_color: glyphon::Color::rgba(
                     self.config.color[0],

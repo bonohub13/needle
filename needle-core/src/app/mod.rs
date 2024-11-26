@@ -109,6 +109,7 @@ impl<'a> State<'a> {
             self.config.width = size.width;
             self.config.height = size.height;
             self.surface.configure(&self.device, &self.config);
+            self.text_renderer.resize(size);
         }
     }
 
@@ -119,14 +120,7 @@ impl<'a> State<'a> {
         self.text_renderer
             .set_text(&time_formatter.time_to_str(&local));
         self.text_renderer.update(&self.queue, &self.config);
-
-        let (text_width, text_height) = self.text_renderer.text_size();
-        let center = [
-            (self.size.width as f32 - text_width * self.text_renderer.scale()) / 2.0,
-            (self.size.height as f32 - text_height * self.text_renderer.scale()) / 2.0,
-        ];
-        self.text_renderer
-            .prepare(&self.device, &self.queue, &self.size, center[0], center[1])?;
+        self.text_renderer.prepare(&self.device, &self.queue)?;
 
         Ok(())
     }

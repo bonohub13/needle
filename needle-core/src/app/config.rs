@@ -17,9 +17,23 @@ pub struct NeedleConfig {
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct Text {
-    pub format: TimeFormat,
     pub scale: f32,
     pub color: [u8; 4],
+    pub format: TimeFormat,
+    pub position: Position,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub enum Position {
+    Center,
+    Top,
+    Bottom,
+    Right,
+    Left,
+    TopRight,
+    TopLeft,
+    BottomRight,
+    BottomLeft,
 }
 
 impl NeedleConfig {
@@ -91,11 +105,12 @@ impl NeedleConfig {
     }
 
     fn write(file: &Path) -> Result<()> {
-        if file.exists() {
+        let default_config_path = Self::config_file(false)?;
+        if file.exists() && file == default_config_path.as_path() {
             return Err(NeedleError::ConfigExists.into());
         }
 
-        let file = OpenOptions::new().write(true).create_new(true).open(file)?;
+        let file = OpenOptions::new().write(true).create(true).open(file)?;
         let mut buf_writer = BufWriter::new(file);
         let config = Self::default();
 
@@ -107,9 +122,10 @@ impl Default for NeedleConfig {
     fn default() -> Self {
         Self {
             text: Text {
-                format: TimeFormat::HourMinSec,
                 scale: 1.0,
                 color: [255, 255, 255, 255],
+                format: TimeFormat::HourMinSec,
+                position: Position::Center,
             },
             background_color: [0.0, 0.0, 0.0, 1.0],
         }
@@ -122,18 +138,21 @@ impl Display for NeedleConfig {
          *
          * ---
          *
+         * # Background color : [r, g, b, alpha]
          * background = [r, g, b, alpha]
          *
+         * # Text Settings
          * [text]
+         * scale = text scale size
+         * color = [r, g, b, alpha]
          * # Time format
          * #    HourMinSec : HH:MM:SS (default)
          * #    HourMinSecMSec : HH:MM:SS.MSec
          * format = time format
-         * scale = text scale size
-         * color = [r, g, b, alpha]
          */
 
         writeln!(f, "# Background color : [r, g, b, alpha]")?;
+        writeln!(f, "#  Range : (0.0-1.0)")?;
         writeln!(
             f,
             "background_color = [{}, {}, {}, {}]",
@@ -142,19 +161,125 @@ impl Display for NeedleConfig {
             self.background_color[2],
             self.background_color[3]
         )?;
-        writeln!(f, "# Text Settings")?;
-        writeln!(f, "{}[text]", Self::NEWLINE)?;
-        writeln!(f, "#  Time format")?;
-        writeln!(f, "#      HourMinSec : HH:MM:SS (default)")?;
-        writeln!(f, "#      HourMinSecMSec : HH:MM:SS.MSec")?;
-        writeln!(f, "format = \"{}\"", self.text.format)?;
+        writeln!(f, "{}# Text Settings", Self::NEWLINE)?;
+        writeln!(f, "[text]")?;
         writeln!(f, "#  Text scale")?;
         writeln!(f, "scale = {}", self.text.scale)?;
-        writeln!(f, "# Text color : [r, g, b, alpha]")?;
+        writeln!(f, "#  Text color : [r, g, b, alpha]")?;
+        writeln!(f, "#      Range : (0-255)")?;
         writeln!(
             f,
             "color = [{}, {}, {}, {}]",
             self.text.color[0], self.text.color[1], self.text.color[2], self.text.color[3]
+        )?;
+        writeln!(f, "#  Time format")?;
+        writeln!(f, "#      HourMinSec : HH:MM:SS (default)")?;
+        writeln!(f, "#      HourMinSecMSec : HH:MM:SS.MSec")?;
+        writeln!(f, "format = \"{}\"", self.text.format)?;
+        writeln!(f, "#  Position")?;
+        writeln!(f, "#      Center")?;
+        writeln!(f, "#      Top")?;
+        writeln!(f, "#      Bottom")?;
+        writeln!(f, "#      Right")?;
+        writeln!(f, "#      Left")?;
+        writeln!(f, "#      TopRight")?;
+        writeln!(f, "#      TopLeft")?;
+        writeln!(f, "#      BottomRight")?;
+        writeln!(f, "#      BottomLeft")?;
+        writeln!(f, "position = {}", self.text.position)
+    }
+}
+
+impl Text {
+    const MARGIN: f32 = 5.0;
+    pub fn position(
+        &self,
+        screen_size: &winit::dpi::PhysicalSize<u32>,
+        text_size: &[f32; 2],
+    ) -> (f32, f32) {
+        match self.position {
+            Position::Center => Self::center(screen_size, text_size),
+            Position::Top => Self::top(screen_size, text_size),
+            Position::Bottom => Self::bottom(screen_size, text_size),
+            Position::Left => Self::left(screen_size, text_size),
+            Position::Right => Self::right(screen_size, text_size),
+            Position::TopLeft => {
+                let top = Self::top(screen_size, text_size);
+                let left = Self::left(screen_size, text_size);
+
+                (left.0, top.1)
+            }
+            Position::TopRight => {
+                let top = Self::top(screen_size, text_size);
+                let right = Self::right(screen_size, text_size);
+
+                (right.0, top.1)
+            }
+            Position::BottomLeft => {
+                let bottom = Self::bottom(screen_size, text_size);
+                let left = Self::left(screen_size, text_size);
+
+                (left.0, bottom.1)
+            }
+            Position::BottomRight => {
+                let bottom = Self::bottom(screen_size, text_size);
+                let right = Self::right(screen_size, text_size);
+
+                (right.0, bottom.1)
+            }
+        }
+    }
+
+    fn center(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+        (
+            (screen_size.width as f32 - text_size[0]) / 2.0,
+            (screen_size.height as f32 - text_size[1]) / 2.0,
         )
+    }
+
+    fn top(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+        (
+            (screen_size.width as f32 - text_size[0]) / 2.0,
+            Self::MARGIN * 2.0,
+        )
+    }
+
+    fn bottom(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+        (
+            (screen_size.width as f32 - text_size[0]) / 2.0,
+            screen_size.height as f32 - text_size[1] - (Self::MARGIN * 2.0),
+        )
+    }
+
+    fn left(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+        (
+            Self::MARGIN,
+            (screen_size.height as f32 - text_size[1]) / 2.0,
+        )
+    }
+
+    fn right(screen_size: &winit::dpi::PhysicalSize<u32>, text_size: &[f32; 2]) -> (f32, f32) {
+        (
+            screen_size.width as f32 - text_size[0] - Self::MARGIN,
+            (screen_size.height as f32 - text_size[1]) / 2.0,
+        )
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let position = match self {
+            Self::Center => "Center",
+            Self::Top => "Top",
+            Self::Bottom => "Bottom",
+            Self::Right => "Right",
+            Self::Left => "Left",
+            Self::TopRight => "TopRight",
+            Self::TopLeft => "TopLeft",
+            Self::BottomRight => "BottomRight",
+            Self::BottomLeft => "BottomLeft",
+        };
+
+        write!(f, "\"{}\"", position)
     }
 }
