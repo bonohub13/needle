@@ -57,9 +57,13 @@ impl NeedleConfig {
         };
 
         if !config_file.exists() {
-            let config_file = config_file.to_string_lossy();
+            if config_file == &default_config_file {
+                Self::config(None)?;
+            } else {
+                let config_file = config_file.to_string_lossy();
 
-            return Err(NeedleError::ConfigNonExistant(config_file.into()).into());
+                return Err(NeedleError::ConfigNonExistant(config_file.into()).into());
+            }
         }
 
         let read = OpenOptions::new().read(true).open(config_file)?;
