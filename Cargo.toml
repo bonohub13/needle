@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.93"
 env_logger = "0.11.5"
 log = "0.4.22"
-needle-core = { version = "0.1.1", path = "needle-core" }
+needle-core = { version = "0.1.3", path = "needle-core" }
 pollster = "0.4.0"
 winit = { version = "0.29", features = ["rwh_05"] }
 
