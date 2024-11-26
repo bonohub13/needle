@@ -67,6 +67,7 @@ impl AppOptions {
             "--help" | "-h" => vec![Self::Help],
             "--version" | "-v" => vec![Self::Version],
             "--config" | "-c" => vec![Self::Run, Self::ConfigFilePath("".to_string())],
+            "--print" | "-p" => vec![Self::GenerateConfig("stdout".to_string())],
             "--gen-config" => vec![Self::GenerateConfig("".to_string())],
             "" | " " | "\t" => vec![Self::Run],
             _ => {
@@ -111,8 +112,9 @@ impl Display for AppOptions {
             Self::Version => {
                 let app_name = env!("CARGO_PKG_NAME");
                 let app_version = env!("CARGO_PKG_VERSION");
+                let core_info = needle_core::version_info();
 
-                format!("{} {}", app_name, app_version)
+                format!("{} {} ({})", app_name, app_version, core_info)
             }
             Self::Help => {
                 let lines = [
@@ -122,6 +124,7 @@ impl Display for AppOptions {
                     "   -h, --help                  Display this message",
                     "   -c, --config [FILENAME]     Specify a path to a custom config file",
                     "                               If path of config file is not specified, it will default to default path",
+                    "   -p, --print                 Output config default values to stdout",
                     "       --gen-config [FILENAME] Generates config file",
                     "                               If path is specified, config file is generated to the specified path",
                     "                                   Default path:",
