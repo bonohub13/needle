@@ -94,7 +94,7 @@ impl NeedleConfig {
         match ProjectDirs::from("com", "bonohub13", "needle") {
             Some(app_dir) => {
                 if (!app_dir.config_dir().exists()) && create_dir {
-                    fs::create_dir(app_dir.config_dir())?;
+                    fs::create_dir_all(app_dir.config_dir())?;
                 }
 
                 Ok(app_dir.config_dir().join(Self::CONFIG_FILE))
