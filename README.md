@@ -6,8 +6,8 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
-- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.3/needle.exe)
-- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.3/needle)
+- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.3-hotfix/needle.exe)
+- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.3-hotfix/needle)
 
 ## Getting Help
 This is a project that is done on my spare time. So please bear that in mind. \
@@ -46,9 +46,6 @@ Features in the TODO List that have been implemented will be erased from the lis
 - Features in queue for development/in active development
     | Date (Added) | Feature                                  | Status                       |
     |:-------------|:-----------------------------------------|:----------------------------:|
-    | 2024/11/17   | Configuration handler                    | Implemented in Version 0.1.2 |
     | 2024/11/17   | Optional FPS limit                       | High Priority                |
     | 2024/11/17   | Optional FPS visualization               | Implemented in Version 0.1.3 |
-    | 2024/11/17   | Optional time format                     | Implemented in Version 0.1.2 |
-    | 2024/11/17   | Optional text color                      | Implemented in Version 0.1.2 |
     | 2024/11/17   | Effects on text via shader code (SPIR-V) | In Query                     |
