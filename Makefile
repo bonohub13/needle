@@ -17,7 +17,7 @@ clean:
 	@$(CARGO) clean
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 
-pkg: clean pkg-linux_docker pkg-windows_docker
+pkg: pkg-linux_docker pkg-windows_docker
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle .
 	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe .
 	@sha256sum needle \
@@ -40,13 +40,8 @@ run:
 pkg-linux:
 	@$(CARGO) build --release --target=${TARGET_LINUX}
 
-pkg-windows:
-	@$(CARGO) build --release --target=${TARGET_WINDOWS}
-
 pkg-linux_docker:
 	@$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${LINUX_IMAGE_TAG} \
 		bash -c "make pkg-linux"
 
-pkg-windows_docker:
-	@$(DOCKER) run --rm -it -v $(shell pwd):/app ${DOCKER_IMAGE_NAME}:${WINDOWS_IMAGE_TAG} \
-		bash -c "make pkg-windows"
+include windows.mk
