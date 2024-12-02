@@ -111,6 +111,10 @@ impl<'a> State<'a> {
         self.size
     }
 
+    pub const fn config(&self) -> &NeedleConfig {
+        &self.app_config
+    }
+
     pub fn resize(&mut self, size: &PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
             self.size = *size;

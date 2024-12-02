@@ -1,7 +1,9 @@
 [package]
+authors = ["bonohub13"]
 name = "needle"
-version = "0.1.3"
+version = "0.1.3-hotfix"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.93"

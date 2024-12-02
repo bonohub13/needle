@@ -14,13 +14,12 @@ pub fn run(config: &NeedleConfig) -> Result<()> {
     let window = WindowBuilder::new()
         .with_title(APP_NAME)
         .build(&event_loop)?;
-    let fps_limit = 30.0;
-    let frame_cap = std::time::Duration::from_secs_f64(1.0 / fps_limit); // 30 fps
-    let fps_update_cap = std::time::Duration::from_secs_f64(1.0); // 1 second
     let mut app = pollster::block_on(State::new(&window, &config))?;
     let mut next_frame = std::time::Instant::now();
     let mut fps_update = std::time::Instant::now();
     let mut fps_counter: u32 = 0;
+    let frame_cap = std::time::Duration::from_secs_f64(1.0 / app.config().fps.frame_limit as f64); // 30 fps
+    let fps_update_cap = std::time::Duration::from_secs_f64(1.0); // 1 second
 
     event_loop.run(move |event, control_flow| {
         fps_counter += 1;
@@ -46,7 +45,9 @@ pub fn run(config: &NeedleConfig) -> Result<()> {
                 WindowEvent::RedrawRequested => {
                     // Main Render Loop
                     app.window().request_redraw();
-                    match app.update((fps_limit - 1.0 / fps_counter as f64) as f32) {
+                    match app.update(
+                        (app.config().fps.frame_limit as f64 - 1.0 / fps_counter as f64) as f32,
+                    ) {
                         Ok(_) => (),
                         Err(err) => {
                             log::error!("Failed to update frame: {}", err);

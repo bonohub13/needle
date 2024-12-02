@@ -5,6 +5,7 @@ use std::fmt::{self, Display, Formatter};
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct FpsConfig {
     pub enable: bool,
+    pub frame_limit: u8,
     pub config: Text,
 }
 
@@ -29,6 +30,8 @@ impl Display for FpsConfig {
         writeln!(f, "#  true            : Enable FPS visualization")?;
         writeln!(f, "#  false (default) : Disable FPS visualization")?;
         writeln!(f, "enable = {}", if self.enable { "true" } else { "false" })?;
+        writeln!(f, "# FPS limit")?;
+        writeln!(f, "frame_limit = {}", self.frame_limit)?;
         for (i, line) in config.iter().enumerate() {
             if line.starts_with("#") {
                 if i == (config.len() - 1) {

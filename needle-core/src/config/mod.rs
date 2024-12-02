@@ -138,6 +138,7 @@ impl Default for NeedleConfig {
             },
             fps: FpsConfig {
                 enable: false,
+                frame_limit: 30,
                 config: Text {
                     scale: 0.25,
                     color: [255, 0, 0, 255],
