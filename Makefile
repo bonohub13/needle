@@ -10,12 +10,15 @@ DOCKER_IMAGE_NAME := buildenv
 LINUX_IMAGE_TAG := linux
 WINDOWS_IMAGE_TAG := windows
 
+SPIRV_DIR := shaders/spv
+
 all: build run
 
 # Rust code
 clean:
 	@$(CARGO) clean
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
+	@rm -rvf ${SPIRV_DIR}
 
 pkg: pkg-linux_docker pkg-windows_docker
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle .
@@ -45,3 +48,4 @@ pkg-linux_docker:
 		bash -c "make pkg-linux"
 
 include windows.mk
+include shader.mk
