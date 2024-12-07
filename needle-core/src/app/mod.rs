@@ -1,4 +1,6 @@
-use crate::{renderer::TextRenderer, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, Time};
+use crate::{
+    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, ShaderRenderer, TextRenderer, Texture, Time,
+};
 use anyhow::{Context, Result};
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -11,17 +13,13 @@ pub struct State<'a> {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+    depth_texture: Texture,
     text_renderer: TextRenderer,
     fps_renderer: TextRenderer,
+    shader_renderer: ShaderRenderer,
 }
 
 impl<'a> State<'a> {
-    #[allow(dead_code)]
-    const VERTEX_SHADER_MAIN: &'static str = "vs_main";
-
-    #[allow(dead_code)]
-    const FRAGMENT_SHADER_MAIN: &'static str = "fs_main";
-
     pub async fn new(window: &'a Window, config: &NeedleConfig) -> Result<Self> {
         let size = window.inner_size();
         let scale_factor = window.scale_factor();
@@ -44,7 +42,7 @@ impl<'a> State<'a> {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    required_features: wgpu::Features::empty(),
+                    required_features: wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
                     ..Default::default()
                 },
                 None,
@@ -70,6 +68,16 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
+        let depth_texture =
+            Texture::create_depth_texture(&device, &surface_config, NeedleLabel::Texture("Depth"));
+        let depth_stencil = wgpu::DepthStencilState {
+            format: Texture::DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        };
+
         // Text Rendering System
         let text_renderer = TextRenderer::new(
             &config.time.config,
@@ -78,6 +86,7 @@ impl<'a> State<'a> {
             &device,
             &queue,
             surface_format,
+            Some(depth_stencil.clone()),
         );
 
         // Fps Rendering System
@@ -88,7 +97,16 @@ impl<'a> State<'a> {
             &device,
             &queue,
             surface_format,
+            Some(depth_stencil.clone()),
         );
+
+        let shader_renderer = ShaderRenderer::new(
+            &device,
+            &surface_config,
+            "shaders/spv/shader.vert.spv",
+            "shaders/spv/shader.frag.spv",
+            Some(depth_stencil),
+        )?;
 
         Ok(Self {
             window,
@@ -98,8 +116,10 @@ impl<'a> State<'a> {
             device,
             queue,
             config: surface_config,
+            depth_texture,
             text_renderer,
             fps_renderer,
+            shader_renderer,
         })
     }
 
@@ -121,6 +141,11 @@ impl<'a> State<'a> {
             self.config.width = size.width;
             self.config.height = size.height;
             self.surface.configure(&self.device, &self.config);
+            self.depth_texture = Texture::create_depth_texture(
+                &self.device,
+                &self.config,
+                NeedleLabel::Texture("Depth"),
+            );
             self.text_renderer.resize(size);
             self.fps_renderer.resize(size);
         }
@@ -182,10 +207,18 @@ impl<'a> State<'a> {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: self.depth_texture.view(),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+            self.shader_renderer.render(&mut render_pass);
             self.text_renderer.render(&mut render_pass)?;
             if self.app_config.fps.enable {
                 self.fps_renderer.render(&mut render_pass)?;
@@ -193,6 +226,9 @@ impl<'a> State<'a> {
         }
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
+
+        self.text_renderer.trim();
+        self.fps_renderer.trim();
 
         Ok(())
     }

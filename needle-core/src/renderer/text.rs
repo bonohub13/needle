@@ -22,14 +22,19 @@ impl TextRenderer {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
+        depth_stencil: Option<wgpu::DepthStencilState>,
     ) -> Self {
         let mut system = FontSystem::new();
         let swash_cache = SwashCache::new();
         let cache = glyphon::Cache::new(device);
         let viewport = Viewport::new(device, &cache);
         let mut atlas = TextAtlas::new(device, queue, &cache, format);
-        let renderer =
-            glyphon::TextRenderer::new(&mut atlas, device, wgpu::MultisampleState::default(), None);
+        let renderer = glyphon::TextRenderer::new(
+            &mut atlas,
+            device,
+            wgpu::MultisampleState::default(),
+            depth_stencil,
+        );
         let mut buffer = Buffer::new(&mut system, glyphon::Metrics::new(80.0, 60.0));
         let physical_width = (size.width as f64 * scale_factor) as f32;
         let physical_height = (size.height as f64 * scale_factor) as f32;
@@ -89,6 +94,10 @@ impl TextRenderer {
                 height: config.height,
             },
         )
+    }
+
+    pub fn trim(&mut self) {
+        self.atlas.trim()
     }
 
     pub fn prepare(

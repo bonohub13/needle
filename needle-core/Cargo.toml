@@ -1,6 +1,6 @@
 [package]
 name = "needle-core"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 
 [dependencies]
@@ -13,5 +13,5 @@ log = "0.4.22"
 pollster = "0.4.0"
 serde = {version = "1.0.215", features = ["derive"]}
 toml = "0.8.19"
-wgpu = "23.0.0"
+wgpu = {version = "23.0.0", features = ["spirv"]}
 winit = { version = "0.29", features = ["rwh_05"] }
