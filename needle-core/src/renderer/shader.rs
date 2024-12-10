@@ -1,13 +1,15 @@
-use crate::NeedleLabel;
-use anyhow::Result;
+use crate::{NeedleError, NeedleLabel};
+use anyhow::{bail, Result};
 use std::{fs::OpenOptions, io::Read};
-use wgpu::{RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, Buffer, RenderPipeline, ShaderModule};
 
 pub struct ShaderRenderer {
     vert_shader: ShaderModule,
     frag_shader: ShaderModule,
-    vert_shader_buffer: Box<[u8]>,
-    frag_shader_buffer: Box<[u8]>,
+    vert_shader_code: Box<[u8]>,
+    frag_shader_code: Box<[u8]>,
+    buffers: Vec<Buffer>,
+    bind_groups: Vec<BindGroup>,
     pipeline: RenderPipeline,
 }
 
@@ -17,30 +19,46 @@ impl ShaderRenderer {
         surface_config: &wgpu::SurfaceConfiguration,
         vert_shader_path: &str,
         frag_shader_path: &str,
+        buffers: Vec<wgpu::Buffer>,
+        bind_group_layouts: Vec<&wgpu::BindGroupLayout>,
+        bind_groups: Vec<wgpu::BindGroup>,
         depth_stencil: Option<wgpu::DepthStencilState>,
+        label: Option<&str>,
     ) -> Result<Self> {
-        let vert_shader_buffer = Self::read_shader(vert_shader_path)?;
-        let frag_shader_buffer = Self::read_shader(frag_shader_path)?;
+        // Each buffer must have their bind group layout and bind group
+        if (buffers.len() != bind_group_layouts.len())
+            || (buffers.len() != bind_groups.len())
+            || (bind_group_layouts.len() != bind_groups.len())
+        {
+            bail!(NeedleError::InvalidBufferRegistration);
+        }
+
+        let label = match label {
+            Some(label) => label.to_string(),
+            None => "Render".to_string(),
+        };
+        let vert_shader_code = Self::read_shader(vert_shader_path)?;
+        let frag_shader_code = Self::read_shader(frag_shader_path)?;
         let vert_shader = unsafe {
             device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(NeedleLabel::Shader("Vertex").as_str()),
-                source: wgpu::util::make_spirv_raw(&vert_shader_buffer),
+                label: Some(&NeedleLabel::Shader("Vertex").to_string()),
+                source: wgpu::util::make_spirv_raw(&vert_shader_code),
             })
         };
         let frag_shader = unsafe {
             device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(NeedleLabel::Shader("Fragment").as_str()),
-                source: wgpu::util::make_spirv_raw(&frag_shader_buffer),
+                label: Some(&NeedleLabel::Shader("Fragment").to_string()),
+                source: wgpu::util::make_spirv_raw(&frag_shader_code),
             })
         };
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some(NeedleLabel::PipelineLayout("Render").as_str()),
-                bind_group_layouts: &[],
+                label: Some(&NeedleLabel::PipelineLayout(&label).to_string()),
+                bind_group_layouts: &bind_group_layouts,
                 push_constant_ranges: &[],
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(NeedleLabel::Pipeline("Render").as_str()),
+            label: Some(&NeedleLabel::Pipeline(&label).to_string()),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vert_shader,
@@ -78,10 +96,12 @@ impl ShaderRenderer {
         });
 
         Ok(Self {
-            vert_shader_buffer,
-            frag_shader_buffer,
+            vert_shader_code,
+            frag_shader_code,
             vert_shader,
             frag_shader,
+            buffers,
+            bind_groups,
             pipeline: render_pipeline,
         })
     }
@@ -94,6 +114,16 @@ impl ShaderRenderer {
     #[inline]
     pub const fn pipeline(&self) -> &RenderPipeline {
         &self.pipeline
+    }
+
+    #[inline]
+    pub fn buffer(&self, index: usize) -> &Buffer {
+        &self.buffers[index]
+    }
+
+    #[inline]
+    pub fn bind_group(&self, index: usize) -> &BindGroup {
+        &self.bind_groups[index]
     }
 
     fn read_shader(path: &str) -> Result<Box<[u8]>> {

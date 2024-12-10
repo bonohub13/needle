@@ -22,6 +22,7 @@ pub enum NeedleError {
     // Renderer related errors
     RemovedFromAtlas,
     ScreenResolutionChanged,
+    InvalidBufferRegistration,
 }
 
 impl Display for NeedleError {
@@ -47,6 +48,10 @@ impl Display for NeedleError {
             Self::Timeout => "Surface | Timeout".to_string(),
             Self::RemovedFromAtlas => "Renderer | Removed from atlas".to_string(),
             Self::ScreenResolutionChanged => "Renderer | Screen resolution changed".to_string(),
+            Self::InvalidBufferRegistration => {
+                "Renderer | Buffer without bind group/bind group layout has been registered"
+                    .to_string()
+            }
         };
 
         writeln!(f, "[ERROR]: {}", msg)

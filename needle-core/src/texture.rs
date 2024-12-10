@@ -19,8 +19,9 @@ impl Texture {
             height: config.height.max(1),
             depth_or_array_layers: 1,
         };
+        let label = label.to_string();
         let desc = wgpu::TextureDescriptor {
-            label: Some(label.as_str()),
+            label: Some(&label),
             size,
             mip_level_count: 1,
             sample_count: 1,
