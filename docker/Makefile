@@ -15,7 +15,7 @@ all: build-base build-linux build-windows shader
 
 build-base:
 	docker build . -t ${BUILD_IMAGE_NAME}:${BASE_IMAGE_TAG} \
-		-f ${BASE_IMAGE_FILE}
+		-f ${BASE_IMAGE_FILE} ${DOCKERFLAG}
 
 build-linux:
 	docker build . -t ${BUILD_IMAGE_NAME}:${LINUX_IMAGE_TAG} \
@@ -28,3 +28,6 @@ build-windows:
 build-shader:
 	docker build . -t ${SHADER_BUILD_IMAGE_TAG}:${LINUX_IMAGE_TAG} \
 		-f ${SHADER_IMAGE_FILE}
+
+rebuild:
+	DOCKERFLAG=--no-cache make build-base build-linux build-windows build-shader
