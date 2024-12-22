@@ -13,11 +13,11 @@ pub enum AppOptions {
     Unknown(String),
 }
 
-impl AppOptions {
+impl<'a> AppOptions {
     #[cfg(windows)]
-    const NEWLINE: &str = "\r\n";
+    const NEWLINE: &'a str = "\r\n";
     #[cfg(not(windows))]
-    const NEWLINE: &str = "\n";
+    const NEWLINE: &'a str = "\n";
     pub fn new() -> Vec<Self> {
         let args = env::args().into_iter().collect::<Vec<_>>();
         let mut skip_counter = 0;

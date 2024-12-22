@@ -11,7 +11,7 @@ BASE_IMAGE_FILE := base.dockerfile
 LINUX_IMAGE_FILE := linux.dockerfile
 WINDOWS_IMAGE_FILE := windows.dockerfile
 
-all: build-base build-linux build-windows shader
+all: build-base build-linux build-windows build-shader
 
 build-base:
 	docker build . -t ${BUILD_IMAGE_NAME}:${BASE_IMAGE_TAG} \

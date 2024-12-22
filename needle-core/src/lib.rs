@@ -1,4 +1,5 @@
 mod app;
+mod buffers;
 mod config;
 mod error;
 mod renderer;
@@ -6,6 +7,7 @@ mod texture;
 mod time;
 
 pub use app::*;
+pub use buffers::*;
 pub use config::*;
 pub use error::*;
 pub use renderer::*;
@@ -32,11 +34,16 @@ pub enum NeedleLabel<'a> {
     RenderPass(&'a str),
     Shader(&'a str),
     Texture(&'a str),
+    VertexBuffer(&'a str),
+    IndexBuffer(&'a str),
+    UniformBuffer(&'a str),
+    BindGroupLayout(&'a str),
+    BindGroup(&'a str),
 }
 
 impl NeedleLabel<'_> {
-    pub fn as_str(&self) -> &str {
-        stringify!("{}", self)
+    pub fn to_string(&self) -> String {
+        format!("{}", self)
     }
 }
 
@@ -45,51 +52,86 @@ impl<'a> Display for NeedleLabel<'a> {
         let label = match self {
             Self::Device(label) => {
                 if label.len() == 0 {
-                    "Device"
+                    "Device".to_string()
                 } else {
-                    stringify!("{} Device", label)
+                    format!("{} Device", label)
                 }
             }
             Self::PipelineLayout(label) => {
                 if label.len() == 0 {
-                    "Pipeline Layout"
+                    "Pipeline Layout".to_string()
                 } else {
-                    stringify!("{} Pipeline Layout", label)
+                    format!("{} Pipeline Layout", label)
                 }
             }
             Self::Pipeline(label) => {
                 if label.len() == 0 {
-                    "Render Pipeline"
+                    "Render Pipeline".to_string()
                 } else {
-                    stringify!("{} Pipeline", label)
+                    format!("{} Pipeline", label)
                 }
             }
             Self::CommandEncoder(label) => {
                 if label.len() == 0 {
-                    "Command Encoder"
+                    "Command Encoder".to_string()
                 } else {
-                    stringify!("{} Command Encoder", label)
+                    format!("{} Command Encoder", label)
                 }
             }
             Self::RenderPass(label) => {
                 if label.len() == 0 {
-                    "Render Pass"
+                    "Render Pass".to_string()
                 } else {
-                    stringify!("{} Render Pass", label)
+                    format!("{} Render Pass", label)
                 }
             }
             Self::Shader(label) => {
                 if label.len() == 0 {
-                    "Shader"
+                    "Shader".to_string()
                 } else {
-                    stringify!("{} Shader", label)
+                    format!("{} Shader", label)
                 }
             }
             Self::Texture(label) => {
                 if label.len() == 0 {
-                    "Texture"
+                    "Texture".to_string()
                 } else {
-                    stringify!("{} Texture", label)
+                    format!("{} Texture", label)
+                }
+            }
+            Self::VertexBuffer(label) => {
+                if label.len() == 0 {
+                    "Vertex Buffer".to_string()
+                } else {
+                    format!("{} Vertex Buffer", label)
+                }
+            }
+            Self::IndexBuffer(label) => {
+                if label.len() == 0 {
+                    "Index Buffer".to_string()
+                } else {
+                    format!("{} Index Buffer", label)
+                }
+            }
+            Self::UniformBuffer(label) => {
+                if label.len() == 0 {
+                    "Uniform Buffer".to_string()
+                } else {
+                    format!("{} Uniform Buffer", label)
+                }
+            }
+            Self::BindGroupLayout(label) => {
+                if label.len() == 0 {
+                    "Bind Group Layout".to_string()
+                } else {
+                    format!("{} Bind Group Layout", label)
+                }
+            }
+            Self::BindGroup(label) => {
+                if label.len() == 0 {
+                    "Bind Group".to_string()
+                } else {
+                    format!("{} Bind Group", label)
                 }
             }
         };

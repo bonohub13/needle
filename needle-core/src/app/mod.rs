@@ -16,7 +16,7 @@ pub struct State<'a> {
     depth_texture: Texture,
     text_renderer: TextRenderer,
     fps_renderer: TextRenderer,
-    shader_renderer: ShaderRenderer,
+    background_renderer: ShaderRenderer,
 }
 
 impl<'a> State<'a> {
@@ -100,12 +100,16 @@ impl<'a> State<'a> {
             Some(depth_stencil.clone()),
         );
 
-        let shader_renderer = ShaderRenderer::new(
+        let background_renderer = ShaderRenderer::new(
             &device,
             &surface_config,
             "shaders/spv/shader.vert.spv",
             "shaders/spv/shader.frag.spv",
+            vec![],
+            vec![],
+            vec![],
             Some(depth_stencil),
+            Some("Backgroun Render"),
         )?;
 
         Ok(Self {
@@ -119,7 +123,7 @@ impl<'a> State<'a> {
             depth_texture,
             text_renderer,
             fps_renderer,
-            shader_renderer,
+            background_renderer,
         })
     }
 
@@ -188,12 +192,12 @@ impl<'a> State<'a> {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some(NeedleLabel::CommandEncoder("").as_str()),
+                label: Some(&NeedleLabel::CommandEncoder("").to_string()),
             });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(NeedleLabel::RenderPass("").as_str()),
+                label: Some(&NeedleLabel::RenderPass("").to_string()),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -218,7 +222,7 @@ impl<'a> State<'a> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            self.shader_renderer.render(&mut render_pass);
+            self.background_renderer.render(&mut render_pass);
             self.text_renderer.render(&mut render_pass)?;
             if self.app_config.fps.enable {
                 self.fps_renderer.render(&mut render_pass)?;

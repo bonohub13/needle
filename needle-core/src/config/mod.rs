@@ -27,12 +27,12 @@ pub struct NeedleConfig {
     pub fps: FpsConfig,
 }
 
-impl NeedleConfig {
+impl<'a> NeedleConfig {
     #[cfg(windows)]
-    const NEWLINE: &str = "\r\n";
+    const NEWLINE: &'a str = "\r\n";
     #[cfg(not(windows))]
-    const NEWLINE: &str = "\n";
-    const CONFIG_FILE: &str = "config.toml";
+    const NEWLINE: &'a str = "\n";
+    const CONFIG_FILE: &'a str = "config.toml";
 
     pub fn config(path: Option<&str>) -> Result<()> {
         let default_config_file = Self::config_file(true)?;
