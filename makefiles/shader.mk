@@ -1,7 +1,7 @@
 GLSLC := glslc
 DOCKER := docker
 
-SHADER_DOCKER_IMAGE_NAME := glsl_buildenv
+DOCKER_IMAGE_NAME := glsl_buildenv
 LINUX_IMAGE_TAG := linux
 
 SHADER_DIR := shaders

@@ -19,7 +19,7 @@ clean:
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 	@rm -rvf ${SPIRV_DIR}
 
-pkg: clean init pkg-linux_docker pkg-windows_docker
+pkg: clean pkg-linux_docker pkg-windows_docker
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle .
 	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe .
 	@sha256sum needle \
