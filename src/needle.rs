@@ -2,6 +2,7 @@ use anyhow::Result;
 use needle_core::{
     AppBase, NeedleConfig, NeedleErr, NeedleLabel, ShaderRenderer, TextRenderer, Texture, Time,
 };
+use std::path::PathBuf;
 
 pub struct Needle<'a> {
     app_base: AppBase<'a>,
@@ -24,11 +25,13 @@ impl<'a> Needle<'a> {
         let depth_stencil = Texture::default_depth_stencil();
         let size = app_base.window().inner_size();
         let scale_factor = app_base.window().scale_factor();
+        let vert_shader_path = PathBuf::from(Self::VERTEX_SHADER_DEFAULT_PATH);
+        let frag_shader_path = PathBuf::from(Self::FRAGMENT_SHADER_DEFAULT_PATH);
         let background_renderer = ShaderRenderer::new(
             app_base.device(),
             app_base.surface_config(),
-            Self::VERTEX_SHADER_DEFAULT_PATH,
-            Self::FRAGMENT_SHADER_DEFAULT_PATH,
+            vert_shader_path,
+            frag_shader_path,
             vec![],
             vec![],
             vec![],
@@ -117,6 +120,13 @@ impl<'a> Needle<'a> {
     }
 
     pub fn render(&mut self) -> NeedleErr<()> {
+        let color = wgpu::Color {
+            r: self.config().background_color[0],
+            g: self.config().background_color[1],
+            b: self.config().background_color[2],
+            a: self.config().background_color[3],
+        };
+
         self.app_base.render(|current_texture, encoder| {
             let view = current_texture
                 .texture
@@ -127,7 +137,7 @@ impl<'a> Needle<'a> {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
+                        load: wgpu::LoadOp::Clear(color),
                         store: wgpu::StoreOp::Store,
                     },
                 })],

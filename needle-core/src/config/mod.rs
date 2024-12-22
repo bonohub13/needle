@@ -90,17 +90,41 @@ impl<'a> NeedleConfig {
         }
     }
 
-    fn config_file(create_dir: bool) -> Result<PathBuf> {
+    pub fn config_path(create_dir: bool, relative_path: Option<&str>) -> Result<PathBuf> {
+        let mut config_path: PathBuf;
+        let relative_path = match relative_path {
+            Some(path) => path.split("/").collect::<Vec<_>>(),
+            None => bail!(NeedleError::InvalidPath),
+        };
+
         match ProjectDirs::from("com", "bonohub13", "needle") {
             Some(app_dir) => {
                 if (!app_dir.config_dir().exists()) && create_dir {
                     fs::create_dir_all(app_dir.config_dir())?;
                 }
 
-                Ok(app_dir.config_dir().join(Self::CONFIG_FILE))
+                config_path = app_dir.config_dir().to_path_buf();
             }
             None => bail!(NeedleError::InvalidPath),
+        };
+
+        for rpath in relative_path {
+            match rpath {
+                "." | "" | " " | "\t" => (),
+                ".." => {
+                    if !config_path.pop() {
+                        bail!(NeedleError::InvalidPath)
+                    }
+                }
+                _ => config_path.push(rpath),
+            }
         }
+
+        Ok(config_path)
+    }
+
+    fn config_file(create_dir: bool) -> Result<PathBuf> {
+        Self::config_path(create_dir, Some(Self::CONFIG_FILE))
     }
 
     fn write(file: &Path) -> Result<()> {

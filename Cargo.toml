@@ -7,10 +7,12 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.93"
+chrono = "0.4.39"
 env_logger = "0.11.5"
 log = "0.4.22"
-needle-core = { version = "0.1.5", path = "needle-core" }
+needle-core = { version = "0.1.6", path = "needle-core" }
 pollster = "0.4.0"
+wgpu = "23.0.1"
 winit = { version = "0.29", features = ["rwh_05"] }
 
 [target.'cfg(windows)'.dependencies]

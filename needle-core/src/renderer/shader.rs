@@ -1,6 +1,10 @@
 use crate::{NeedleError, NeedleLabel};
 use anyhow::{bail, Result};
-use std::{fs::OpenOptions, io::Read};
+use std::{
+    fs::OpenOptions,
+    io::Read,
+    path::{Path, PathBuf},
+};
 use wgpu::{BindGroup, Buffer, RenderPipeline, ShaderModule};
 
 pub struct ShaderRenderer {
@@ -17,8 +21,8 @@ impl ShaderRenderer {
     pub fn new(
         device: &wgpu::Device,
         surface_config: &wgpu::SurfaceConfiguration,
-        vert_shader_path: &str,
-        frag_shader_path: &str,
+        vert_shader_path: PathBuf,
+        frag_shader_path: PathBuf,
         buffers: Vec<wgpu::Buffer>,
         bind_group_layouts: Vec<&wgpu::BindGroupLayout>,
         bind_groups: Vec<wgpu::BindGroup>,
@@ -37,8 +41,8 @@ impl ShaderRenderer {
             Some(label) => label.to_string(),
             None => "Render".to_string(),
         };
-        let vert_shader_code = Self::read_shader(vert_shader_path)?;
-        let frag_shader_code = Self::read_shader(frag_shader_path)?;
+        let vert_shader_code = Self::read_shader(&vert_shader_path)?;
+        let frag_shader_code = Self::read_shader(&frag_shader_path)?;
         let vert_shader = unsafe {
             device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
                 label: Some(&NeedleLabel::Shader("Vertex").to_string()),
@@ -126,7 +130,7 @@ impl ShaderRenderer {
         &self.bind_groups[index]
     }
 
-    fn read_shader(path: &str) -> Result<Box<[u8]>> {
+    fn read_shader(path: &Path) -> Result<Box<[u8]>> {
         let mut reader = OpenOptions::new().read(true).open(path)?;
         let mut buffer = vec![];
 
