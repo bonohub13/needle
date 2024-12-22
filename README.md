@@ -53,3 +53,4 @@ Features in the TODO List that have been implemented will be erased from the lis
     | 2024/12/22   | Update winit version to latest release    | In Query                     |
     | 2024/12/22   | Transparent background for Windows        | High Priority                |
     | 2024/12/22   | Documentation for use in OBS Studio       | In Query                     |
+    | 2024/12/22   | Auto download default shaders             | In Query                     |
