@@ -1,4 +1,4 @@
-mod app;
+mod base;
 mod buffers;
 mod config;
 mod error;
@@ -6,7 +6,7 @@ mod renderer;
 mod texture;
 mod time;
 
-pub use app::*;
+pub use base::*;
 pub use buffers::*;
 pub use config::*;
 pub use error::*;
@@ -32,6 +32,7 @@ pub enum NeedleLabel<'a> {
     Pipeline(&'a str),
     CommandEncoder(&'a str),
     RenderPass(&'a str),
+    Renderer(&'a str),
     Shader(&'a str),
     Texture(&'a str),
     VertexBuffer(&'a str),
@@ -83,6 +84,13 @@ impl<'a> Display for NeedleLabel<'a> {
                     "Render Pass".to_string()
                 } else {
                     format!("{} Render Pass", label)
+                }
+            }
+            Self::Renderer(label) => {
+                if label.len() == 0 {
+                    "Renderer".to_string()
+                } else {
+                    format!("{} Renderer", label)
                 }
             }
             Self::Shader(label) => {

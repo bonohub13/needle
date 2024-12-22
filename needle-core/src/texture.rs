@@ -51,6 +51,16 @@ impl Texture {
         }
     }
 
+    pub fn default_depth_stencil() -> wgpu::DepthStencilState {
+        wgpu::DepthStencilState {
+            format: Texture::DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        }
+    }
+
     #[inline]
     pub const fn view(&self) -> &wgpu::TextureView {
         &self.view
