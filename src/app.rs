@@ -13,6 +13,7 @@ pub fn run(config: &NeedleConfig) -> Result<()> {
     let event_loop = EventLoop::new()?;
     let window = WindowBuilder::new()
         .with_title(APP_NAME)
+        .with_transparent(true)
         .build(&event_loop)?;
     let mut app = pollster::block_on(State::new(&window, &config))?;
     let mut next_frame = std::time::Instant::now();
