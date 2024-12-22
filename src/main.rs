@@ -1,8 +1,10 @@
 #![windows_subsystem = "windows"]
 mod app;
+mod needle;
 mod options;
 
 use app::*;
+use needle::*;
 use options::*;
 
 use anyhow::{bail, Result};

@@ -1,5 +1,6 @@
+use super::Needle;
 use anyhow::Result;
-use needle_core::{NeedleConfig, NeedleError, State};
+use needle_core::{NeedleConfig, NeedleError};
 use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::EventLoop,
@@ -15,7 +16,7 @@ pub fn run(config: &NeedleConfig) -> Result<()> {
         .with_title(APP_NAME)
         .with_transparent(true)
         .build(&event_loop)?;
-    let mut app = pollster::block_on(State::new(&window, &config))?;
+    let mut app = Needle::new(&window, config)?;
     let mut next_frame = std::time::Instant::now();
     let mut fps_update = std::time::Instant::now();
     let mut fps_counter: u32 = 0;
@@ -46,9 +47,7 @@ pub fn run(config: &NeedleConfig) -> Result<()> {
                 WindowEvent::RedrawRequested => {
                     // Main Render Loop
                     app.window().request_redraw();
-                    match app.update(
-                        (app.config().fps.frame_limit as f64 - 1.0 / fps_counter as f64) as f32,
-                    ) {
+                    match app.update(fps_counter) {
                         Ok(_) => (),
                         Err(err) => {
                             log::error!("Failed to update frame: {}", err);
