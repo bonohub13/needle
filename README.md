@@ -44,8 +44,12 @@ Features in the TODO List that have been implemented will be erased from the lis
     | Implemented in VersionX.Y.Z | Feature released on Version X.Y.Z                  |
 
 - Features in queue for development/in active development
-    | Date (Added) | Feature                                  | Status                       |
-    |:-------------|:-----------------------------------------|:----------------------------:|
-    | 2024/11/17   | Optional FPS limit                       | Next Release                 |
-    | 2024/11/17   | Optional FPS visualization               | Implemented in Version 0.1.3 |
-    | 2024/11/17   | Effects on text via shader code (SPIR-V) | In Development               |
+    | Date (Added) | Feature                                   | Status                       |
+    |:-------------|:------------------------------------------|:----------------------------:|
+    | 2024/11/17   | Optional FPS limit                        | Next Release                 |
+    | 2024/11/17   | Optional FPS visualization                | Implemented in Version 0.1.3 |
+    | 2024/11/17   | Effects on text via shader code (SPIR-V)  | In Query                     |
+    | 2024/12/22   | Background color via shader code (SPIR-V) | High Priority                |
+    | 2024/12/22   | Update winit version to latest release    | In Query                     |
+    | 2024/12/22   | Transparent background for Windows        | High Priority                |
+    | 2024/12/22   | Documentation for use in OBS Studio       | In Query                     |
