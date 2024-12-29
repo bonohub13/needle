@@ -19,7 +19,7 @@
     - フレームレートの表示 (`fps.enable`)
     - フレームレートの上限値設定 (`fps_limit`; デフォルト: 30)
 
-![needleの編集例](resources/common/edit_needle.png)
+![needleの編集例](resources/common/edit_config.png)
 
 ## 1. OBS Studio内の使用例
 1. OBS Studioとneedleを起動.

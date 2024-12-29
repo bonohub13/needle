@@ -19,7 +19,7 @@ Go to `%APPDATA%\bonohub13\needle\config` and edit `config.toml` to edit the set
     - Framerate visualization (`fps.enable`)
     - Framerate limit (`fps_limit`; default: 30)
 
-![Example of Customizing needle](resources/common/edit_needle.png)
+![Example of Customizing needle](resources/common/edit_config.png)
 
 ## 1. Example for usage in OBS Studio
 1. Launch needle and OBS Studio.
