@@ -1,11 +1,10 @@
-use crate::{NeedleConfig, NeedleErr, NeedleError, NeedleLabel};
+use crate::{NeedleErr, NeedleError, NeedleLabel};
 use anyhow::{Context, Result};
+use std::sync::Arc;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct AppBase<'a> {
-    window: &'a Window,
-    app_config: NeedleConfig,
     size: PhysicalSize<u32>,
     surface: Surface<'a>,
     device: Device,
@@ -14,7 +13,7 @@ pub struct AppBase<'a> {
 }
 
 impl<'a> AppBase<'a> {
-    pub async fn new(window: &'a Window, config: &NeedleConfig) -> Result<Self> {
+    pub async fn new(window: Arc<Window>) -> Result<Self> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
@@ -62,8 +61,6 @@ impl<'a> AppBase<'a> {
         };
 
         Ok(Self {
-            window,
-            app_config: *config,
             size,
             surface,
             device,
@@ -73,18 +70,8 @@ impl<'a> AppBase<'a> {
     }
 
     #[inline]
-    pub const fn window(&self) -> &Window {
-        &self.window
-    }
-
-    #[inline]
     pub const fn size(&self) -> PhysicalSize<u32> {
         self.size
-    }
-
-    #[inline]
-    pub const fn config(&self) -> &NeedleConfig {
-        &self.app_config
     }
 
     #[inline]
