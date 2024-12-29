@@ -2,12 +2,16 @@
 Local application that displays the time! \
 Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/grovesNL/glyphon) for text rendering, and written in Rust!
 
-![Example of Needle running on Linux](./doc/resources/needle.gif)
+![Example of Needle running on Linux](./doc/resources/common/needle.gif)
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
 - Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.3-hotfix/needle.exe)
 - Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.3-hotfix/needle)
+
+## Instruction
+- Read the [instructions](./doc/INSTRUCTIONS.md) for examples to use in OBS Studio.
+- For Japanese users: [instructions_jp](./doc/INSTRUCTIONS_JP.md)
 
 ## Getting Help
 This is a project that is done on my spare time. So please bear that in mind. \
