@@ -32,4 +32,4 @@
 5. Add `Color Key` to `Effect Filters` and set the background color to `Key Color Type`.
     - ![フィルタ設定](resources/jp/needle_filtered_jp.png)
 6. DONE!
-    - ![結果](resources/jp/end_result_jp.png)
+    - ![結果](resources/jp/end_result.png)
