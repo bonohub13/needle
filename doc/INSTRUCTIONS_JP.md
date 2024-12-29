@@ -22,14 +22,14 @@
 ![needleの編集例](resources/common/edit_config.png)
 
 ## 1. OBS Studio内の使用例
-1. OBS Studioとneedleを起動.
-2. Select `Window Capture` in `Sources`.
+1. OBS Studioとneedleを起動します。
+2. `ソースを作成/選択` 下の `ウィンドウキャプチャ`を押します。
     - ![ウィンドウキャプチャ](resources/jp/window_capture_jp.png)
-3. Select needle for window source and set the `Capture Method` to `Windows 10 (1903 and up)`
+3. needleをソースとして選択後、 `キャプチャ方法` を `Windows 10 (1903以降)`に指定します。
     - ![ウィンドウキャプチャ (設定)](resources/jp/window_capture-needle_jp.png)
-4. After selecting `needle` in `Sources`, select `filter`.
+4. ソース内の`needle` を選択後、`フィルタ`ボタンを押します。
     - ![フィルタ](resources/jp/needle_filter_jp.png)
-5. Add `Color Key` to `Effect Filters` and set the background color to `Key Color Type`.
+5. `エフェクトフィルタ`内の`クロマキー`フィルタを押します。
     - ![フィルタ設定](resources/jp/needle_filtered_jp.png)
-6. DONE!
+6. 背景色を`色キーの種類`に指定して、`閉じる`を押してた後に背景色が透明化されていることを確認できます。
     - ![結果](resources/jp/end_result.png)
