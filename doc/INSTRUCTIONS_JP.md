@@ -24,12 +24,12 @@
 ## 1. OBS Studio内の使用例
 1. OBS Studioとneedleを起動.
 2. Select `Window Capture` in `Sources`.
-    - ![ウィンドウキャプチャ](jp/window_capture_jp.png)
+    - ![ウィンドウキャプチャ](resources/jp/window_capture_jp.png)
 3. Select needle for window source and set the `Capture Method` to `Windows 10 (1903 and up)`
-    - ![ウィンドウキャプチャ (設定)](jp/window_capture-needle_jp.png)
+    - ![ウィンドウキャプチャ (設定)](resources/jp/window_capture-needle_jp.png)
 4. After selecting `needle` in `Sources`, select `filter`.
-    - ![フィルタ](jp/needle_filter_jp.png)
+    - ![フィルタ](resources/jp/needle_filter_jp.png)
 5. Add `Color Key` to `Effect Filters` and set the background color to `Key Color Type`.
-    - ![フィルタ設定](jp/needle_filtered_jp.png)
+    - ![フィルタ設定](resources/jp/needle_filtered_jp.png)
 6. DONE!
-    - ![結果](jp/end_result_jp.png)
+    - ![結果](resources/jp/end_result_jp.png)
