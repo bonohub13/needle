@@ -22,7 +22,7 @@ use std::{
 
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub struct NeedleConfig {
-    pub background_color: [f64; 4],
+    pub background_color: [f32; 4],
     pub time: TimeConfig,
     pub fps: FpsConfig,
 }

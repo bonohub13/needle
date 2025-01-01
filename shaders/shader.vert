@@ -1,12 +1,12 @@
-#version 450
+#version 460
 
-layout(location = 0) out vec2 texCoord;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec4 color;
+
+layout(location = 2) out vec4 outColor;
 
 void main() {
-    vec2 pos;
+    gl_Position = vec4(position, 1.0);
 
-    pos.x = float(1 - int(gl_VertexIndex)) * 0.5;
-    pos.y = float(int(gl_VertexIndex & 1) * 2 - 1) * 0.5;
-
-    gl_Position = vec4(pos, 0.1, 1.0);
+    outColor = color;
 }

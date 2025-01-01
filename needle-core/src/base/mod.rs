@@ -1,7 +1,7 @@
-use crate::{NeedleErr, NeedleError, NeedleLabel};
+use crate::{NeedleErr, NeedleError, NeedleLabel, Vertex};
 use anyhow::{Context, Result};
 use std::sync::Arc;
-use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
+use wgpu::{util::DeviceExt, Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct AppBase<'a> {
@@ -127,5 +127,23 @@ impl<'a> AppBase<'a> {
         output.present();
 
         Ok(())
+    }
+
+    pub fn create_vertex_buffer(&self, label: &str, vertices: &[Vertex]) -> wgpu::Buffer {
+        self.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&NeedleLabel::VertexBuffer(label).to_string()),
+                contents: bytemuck::cast_slice(vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            })
+    }
+
+    pub fn create_index_buffer(&self, label: &str, indices: &[u32]) -> wgpu::Buffer {
+        self.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&NeedleLabel::IndexBuffer(label).to_string()),
+                contents: bytemuck::cast_slice(indices),
+                usage: wgpu::BufferUsages::INDEX,
+            })
     }
 }

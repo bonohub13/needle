@@ -1,7 +1,7 @@
 use anyhow::Result;
 use needle_core::{
     AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, ShaderRenderer, TextRenderer,
-    Texture, Time,
+    Texture, Time, Vertex,
 };
 use std::{
     sync::Arc,
@@ -49,6 +49,11 @@ impl<'a> Needle<'a> {
             let window_size = window.inner_size();
             let window_scale_factor = window.scale_factor();
             let depth_stencil_state = Texture::default_depth_stencil();
+            let (background_vertices, indices) =
+                Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
+            let background_vertex_buffer =
+                app_base.create_vertex_buffer("Background", &background_vertices);
+            let background_index_buffer = app_base.create_index_buffer("Background", &indices);
             let background_renderer = ShaderRenderer::new(
                 app_base.device(),
                 app_base.surface_config(),
@@ -56,9 +61,10 @@ impl<'a> Needle<'a> {
                     .expect("Failed to find vertex shader"),
                 NeedleConfig::config_path(false, Some(Self::FRAGMENT_SHADER_DEFAULT_PATH))
                     .expect("Failed to find fragment shader"),
-                vec![],
-                vec![],
-                vec![],
+                vec![background_vertex_buffer],
+                vec![Vertex::buffer_layout()],
+                Some((0, indices)),
+                Some(background_index_buffer),
                 Some(depth_stencil_state.clone()),
                 Some("Background"),
             )?;
@@ -91,34 +97,54 @@ impl<'a> Needle<'a> {
         }
     }
 
+    fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
+        if (size.width > 0) && (size.height > 0) {
+            if let (Some(_window), Some(app_base), Some(time), Some(fps)) = (
+                self.window.as_ref(),
+                self.app_base.as_mut(),
+                self.time_renderer.as_mut(),
+                self.fps_renderer.as_mut(),
+            ) {
+                app_base.resize(size);
+                self.depth_texture = Some(Texture::create_depth_texture(
+                    app_base.device(),
+                    app_base.surface_config(),
+                    NeedleLabel::Texture("Depth"),
+                ));
+                time.resize(size);
+                fps.resize(size);
+            }
+        }
+    }
+
     fn update(&mut self) -> Result<()> {
         let app_base = self
             .app_base
             .as_ref()
             .expect("needle_core::AppBase not available");
         let config = self.config.as_ref().expect("NeedleConfig not available");
-        let time_renderer = self
+        let time = self
             .time_renderer
             .as_mut()
             .expect("Time Renderer not available");
-        let fps_renderer = self
+        let fps = self
             .fps_renderer
             .as_mut()
             .expect("FPS Renderer not available");
         let local = chrono::Local::now();
         let time_formatter = Time::new(config.time.format);
 
-        time_renderer.set_text(&time_formatter.time_to_str(&local));
-        time_renderer.update(app_base.queue(), app_base.surface_config());
-        time_renderer.prepare(5.0, &app_base.device(), app_base.queue())?;
+        time.set_text(&time_formatter.time_to_str(&local));
+        time.update(app_base.queue(), app_base.surface_config());
+        time.prepare(5.0, &app_base.device(), app_base.queue())?;
 
         if config.fps.enable {
-            fps_renderer.set_text(&format!(
+            fps.set_text(&format!(
                 "{:.3}",
                 config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
             ));
-            fps_renderer.update(app_base.queue(), app_base.surface_config());
-            fps_renderer.prepare(5.0, &app_base.device(), app_base.queue())?;
+            fps.update(app_base.queue(), app_base.surface_config());
+            fps.prepare(5.0, &app_base.device(), app_base.queue())?;
         }
 
         Ok(())
@@ -129,7 +155,6 @@ impl<'a> Needle<'a> {
             .app_base
             .as_mut()
             .expect("needle_core::AppBase not available");
-        let config = self.config.as_ref().expect("NeedleConfig not available");
         let depth_texture = self
             .depth_texture
             .as_ref()
@@ -147,10 +172,10 @@ impl<'a> Needle<'a> {
             .as_mut()
             .expect("FPS Renderer not available");
         let color = wgpu::Color {
-            r: config.background_color[0],
-            g: config.background_color[1],
-            b: config.background_color[2],
-            a: config.background_color[3],
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
         };
 
         app_base.render(|current_texture, encoder| {
@@ -239,23 +264,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                 event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
-                if (physical_size.width > 0) && (physical_size.height > 0) {
-                    if let (Some(_window), Some(app_base), Some(time), Some(fps)) = (
-                        self.window.as_ref(),
-                        self.app_base.as_mut(),
-                        self.time_renderer.as_mut(),
-                        self.fps_renderer.as_mut(),
-                    ) {
-                        app_base.resize(&physical_size);
-                        self.depth_texture = Some(Texture::create_depth_texture(
-                            app_base.device(),
-                            app_base.surface_config(),
-                            NeedleLabel::Texture("Depth"),
-                        ));
-                        time.resize(&physical_size);
-                        fps.resize(&physical_size);
-                    }
-                }
+                self.resize(&physical_size);
             }
             WindowEvent::RedrawRequested => {
                 if self.window.is_some()
@@ -287,23 +296,10 @@ impl<'a> ApplicationHandler for Needle<'a> {
                         }
                         Err(e) => match e {
                             NeedleError::Lost | NeedleError::Outdated => {
-                                if let (Some(window), Some(app_base), Some(time), Some(fps)) = (
-                                    self.window.as_ref(),
-                                    self.app_base.as_mut(),
-                                    self.time_renderer.as_mut(),
-                                    self.fps_renderer.as_mut(),
-                                ) {
+                                if let Some(window) = self.window.as_ref() {
                                     let size = window.inner_size();
 
-                                    app_base.resize(&size);
-                                    self.depth_texture = Some(Texture::create_depth_texture(
-                                        app_base.device(),
-                                        app_base.surface_config(),
-                                        NeedleLabel::Texture("Depth"),
-                                    ));
-                                    time.resize(&size);
-                                    fps.resize(&size);
-                                    window.request_redraw();
+                                    self.resize(&size);
                                 }
                             }
                             NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {

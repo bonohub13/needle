@@ -5,15 +5,16 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
-use wgpu::{BindGroup, Buffer, RenderPipeline, ShaderModule};
+use wgpu::{Buffer, RenderPipeline, ShaderModule};
 
 pub struct ShaderRenderer {
     vert_shader: ShaderModule,
     frag_shader: ShaderModule,
     vert_shader_code: Box<[u8]>,
     frag_shader_code: Box<[u8]>,
-    buffers: Vec<Buffer>,
-    bind_groups: Vec<BindGroup>,
+    vertex_buffers: Vec<Buffer>,
+    indices: Option<(i32, Box<[u32]>)>,
+    index_buffers: Option<Buffer>,
     pipeline: RenderPipeline,
 }
 
@@ -23,17 +24,18 @@ impl ShaderRenderer {
         surface_config: &wgpu::SurfaceConfiguration,
         vert_shader_path: PathBuf,
         frag_shader_path: PathBuf,
-        buffers: Vec<wgpu::Buffer>,
-        bind_group_layouts: Vec<&wgpu::BindGroupLayout>,
-        bind_groups: Vec<wgpu::BindGroup>,
+        vertex_buffers: Vec<wgpu::Buffer>,
+        vertex_buffer_layouts: Vec<wgpu::VertexBufferLayout>,
+        indices: Option<(i32, Box<[u32]>)>,
+        index_buffers: Option<wgpu::Buffer>,
         depth_stencil: Option<wgpu::DepthStencilState>,
         label: Option<&str>,
     ) -> Result<Self> {
         // Each buffer must have their bind group layout and bind group
-        if (buffers.len() != bind_group_layouts.len())
-            || (buffers.len() != bind_groups.len())
-            || (bind_group_layouts.len() != bind_groups.len())
-        {
+        if vertex_buffers.len() != vertex_buffer_layouts.len() {
+            bail!(NeedleError::InvalidBufferRegistration);
+        }
+        if indices.is_some() != index_buffers.is_some() {
             bail!(NeedleError::InvalidBufferRegistration);
         }
 
@@ -58,7 +60,7 @@ impl ShaderRenderer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some(&NeedleLabel::PipelineLayout(&label).to_string()),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -104,15 +106,29 @@ impl ShaderRenderer {
             frag_shader_code,
             vert_shader,
             frag_shader,
-            buffers,
-            bind_groups,
+            vertex_buffers,
+            indices,
+            index_buffers,
             pipeline: render_pipeline,
         })
     }
 
+    pub fn update<F: FnOnce(&mut [wgpu::Buffer])>(&mut self, func: F) {
+        func(&mut self.vertex_buffers);
+    }
+
     pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
+        /* Vertex buffers without index buffer requires manual draw call. */
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.draw(0..3, 0..1);
+        for (i, vertex_buffer) in self.vertex_buffers.iter().enumerate() {
+            render_pass.set_vertex_buffer(i as u32, vertex_buffer.slice(..));
+        }
+        if let (Some(index_buffer), Some((base_vertex, indices))) =
+            (self.index_buffers.as_ref(), self.indices.as_ref())
+        {
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..indices.len() as u32, *base_vertex, 0..1);
+        }
     }
 
     #[inline]
@@ -121,13 +137,8 @@ impl ShaderRenderer {
     }
 
     #[inline]
-    pub fn buffer(&self, index: usize) -> &Buffer {
-        &self.buffers[index]
-    }
-
-    #[inline]
-    pub fn bind_group(&self, index: usize) -> &BindGroup {
-        &self.bind_groups[index]
+    pub fn vertex_buffer(&self, index: usize) -> &Buffer {
+        &self.vertex_buffers[index]
     }
 
     fn read_shader(path: &Path) -> Result<Box<[u8]>> {

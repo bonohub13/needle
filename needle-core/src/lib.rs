@@ -5,6 +5,7 @@ mod error;
 mod renderer;
 mod texture;
 mod time;
+mod utils;
 
 pub use base::*;
 pub use buffers::*;
@@ -13,7 +14,6 @@ pub use error::*;
 pub use renderer::*;
 pub use texture::*;
 pub use time::*;
-pub use wgpu::{include_spirv_raw, include_wgsl};
 
 use std::fmt::{Display, Formatter, Result};
 
