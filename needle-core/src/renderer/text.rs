@@ -1,6 +1,7 @@
-use crate::{NeedleErr, NeedleError, Text};
-use anyhow::Result;
-use glyphon::{Buffer, FontSystem, SwashCache, TextAtlas, Viewport};
+use crate::{NeedleConfig, NeedleErr, NeedleError, Text};
+use anyhow::{bail, Result};
+use glyphon::{fontdb::Source, Buffer, FontSystem, SwashCache, TextAtlas, Viewport};
+use std::path::PathBuf;
 use winit::dpi::PhysicalSize;
 
 pub struct TextRenderer {
@@ -17,14 +18,32 @@ pub struct TextRenderer {
 impl TextRenderer {
     pub fn new(
         config: &Text,
+        fonts: Option<Vec<String>>,
         size: &PhysicalSize<u32>,
         scale_factor: f64,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         depth_stencil: Option<wgpu::DepthStencilState>,
-    ) -> Self {
-        let mut system = FontSystem::new();
+    ) -> Result<Self> {
+        let mut system = match fonts {
+            Some(font_names) => {
+                let mut fonts = vec![];
+                for font_name in font_names.iter() {
+                    let font = Self::find_font(font_name)?;
+
+                    fonts.push(Source::File(font));
+                }
+                let mut system = FontSystem::new_with_fonts(fonts.into_iter());
+
+                system
+                    .db_mut()
+                    .set_sans_serif_family(font_names[0].clone().split(".").collect::<Vec<_>>()[0]);
+
+                system
+            }
+            None => FontSystem::new(),
+        };
         let swash_cache = SwashCache::new();
         let cache = glyphon::Cache::new(device);
         let viewport = Viewport::new(device, &cache);
@@ -42,7 +61,7 @@ impl TextRenderer {
         buffer.set_size(&mut system, Some(physical_width), Some(physical_height));
         buffer.shape_until_scroll(&mut system, false);
 
-        Self {
+        Ok(Self {
             system,
             swash_cache,
             viewport,
@@ -51,7 +70,7 @@ impl TextRenderer {
             buffer,
             config: *config,
             size: *size,
-        }
+        })
     }
 
     #[inline]
@@ -153,6 +172,16 @@ impl TextRenderer {
                     }
                 }
             }
+        }
+    }
+
+    fn find_font(font_name: &str) -> Result<PathBuf> {
+        let config_path = NeedleConfig::config_path(true, Some(&format!("fonts/{}", font_name)))?;
+
+        if config_path.exists() {
+            Ok(config_path)
+        } else {
+            bail!(NeedleError::InvalidPath)
         }
     }
 }
