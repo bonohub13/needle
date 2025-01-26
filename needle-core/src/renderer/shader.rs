@@ -8,10 +8,10 @@ use std::{
 use wgpu::{Buffer, RenderPipeline, ShaderModule};
 
 pub struct ShaderRenderer {
-    vert_shader: ShaderModule,
-    frag_shader: ShaderModule,
-    vert_shader_code: Box<[u8]>,
-    frag_shader_code: Box<[u8]>,
+    _vert_shader: ShaderModule,
+    _frag_shader: ShaderModule,
+    _vert_shader_code: Box<[u8]>,
+    _frag_shader_code: Box<[u8]>,
     vertex_buffers: Vec<Buffer>,
     indices: Option<(i32, Box<[u32]>)>,
     index_buffers: Option<Buffer>,
@@ -102,10 +102,10 @@ impl ShaderRenderer {
         });
 
         Ok(Self {
-            vert_shader_code,
-            frag_shader_code,
-            vert_shader,
-            frag_shader,
+            _vert_shader_code: vert_shader_code,
+            _frag_shader_code: frag_shader_code,
+            _vert_shader: vert_shader,
+            _frag_shader: frag_shader,
             vertex_buffers,
             indices,
             index_buffers,
