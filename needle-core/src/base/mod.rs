@@ -139,7 +139,7 @@ impl<'a> AppBase<'a> {
             })
     }
 
-    pub fn create_index_buffer(&self, label: &str, indices: &[u32]) -> wgpu::Buffer {
+    pub fn create_index_buffer(&self, label: &str, indices: &[u16]) -> wgpu::Buffer {
         self.device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&NeedleLabel::IndexBuffer(label).to_string()),

@@ -17,14 +17,14 @@ impl Vertex {
     }
 
     pub fn rectangle(size: [f32; 2], offset: [f32; 2], depth: f32, color: &[f32; 4]) -> Vec<Self> {
-        let (min_x, min_y) = (crop(offset[0], 2.0) - 1.0, crop(offset[1], 2.0) - 1.0);
+        let (min_x, min_y) = (crop(offset[0], 1.0) - 1.0, crop(offset[1], 1.0) - 1.0);
         let vertices = vec![
             Vertex::new([min_x, min_y, depth], *color),     // Top left
             Vertex::new([size[0], min_y, depth], *color),   // Top Right
-            Vertex::new([size[0], size[1], depth], *color), // Bottom right
+            Vertex::new([min_x, size[1], depth], *color),   // Bottom left
+            Vertex::new([size[0], min_y, depth], *color),   // Top Right
             Vertex::new([size[0], size[1], depth], *color), // Bottom right
             Vertex::new([min_x, size[1], depth], *color),   // Bottom left
-            Vertex::new([min_x, min_y, depth], *color),     // Top left
         ];
 
         vertices
@@ -35,7 +35,7 @@ impl Vertex {
         offset: [f32; 2],
         depth: f32,
         color: &[f32; 4],
-    ) -> (Vec<Self>, Box<[u32]>) {
+    ) -> (Vec<Self>, Box<[u16]>) {
         let (min_x, min_y) = (crop(offset[0], 2.0) - 1.0, crop(offset[1], 2.0) - 1.0);
         let vertices = vec![
             Vertex::new([min_x, min_y, depth], *color),     // Top left
@@ -46,21 +46,21 @@ impl Vertex {
         /* Order to draw
          * Top left
          * Top right
-         * Bottom right
+         * Bottom left
          * ---
+         * Top right
          * Bottom right
          * Bottom left
-         * Top left
          */
         let indices = [
-            0, 1, 2, // Upper right triangle
-            2, 3, 0, // Lower left triangle
+            0, 1, 3, // Upper left triangle
+            1, 2, 3, // Lower bottom triangle
         ];
 
         (vertices, indices.into())
     }
 
-    pub fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
+    pub const fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,

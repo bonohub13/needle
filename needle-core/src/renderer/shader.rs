@@ -13,7 +13,7 @@ pub struct ShaderRenderer {
     _vert_shader_code: Box<[u8]>,
     _frag_shader_code: Box<[u8]>,
     vertex_buffers: Vec<Buffer>,
-    indices: Option<(i32, Box<[u32]>)>,
+    indices: Option<(i32, Box<[u16]>)>,
     index_buffers: Option<Buffer>,
     pipeline: RenderPipeline,
 }
@@ -26,7 +26,7 @@ impl ShaderRenderer {
         frag_shader_path: PathBuf,
         vertex_buffers: Vec<wgpu::Buffer>,
         vertex_buffer_layouts: Vec<wgpu::VertexBufferLayout>,
-        indices: Option<(i32, Box<[u32]>)>,
+        indices: Option<(i32, Box<[u16]>)>,
         index_buffers: Option<wgpu::Buffer>,
         depth_stencil: Option<wgpu::DepthStencilState>,
         label: Option<&str>,
@@ -69,7 +69,7 @@ impl ShaderRenderer {
             vertex: wgpu::VertexState {
                 module: &vert_shader,
                 entry_point: Some("main"),
-                buffers: &[],
+                buffers: &vertex_buffer_layouts,
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
