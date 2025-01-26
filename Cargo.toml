@@ -10,9 +10,9 @@ anyhow = "1.0.93"
 chrono = "0.4.39"
 env_logger = "0.11.5"
 log = "0.4.22"
-needle-core = { version = "0.1.7", path = "needle-core" }
+needle-core = { version = "0.1.8", path = "needle-core" }
 pollster = "0.4.0"
-wgpu = "23.0.1"
+wgpu = "24.0.1"
 winit = { version = "0.30"}
 
 [target.'cfg(windows)'.dependencies]

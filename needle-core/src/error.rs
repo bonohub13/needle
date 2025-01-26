@@ -23,6 +23,9 @@ pub enum NeedleError {
     RemovedFromAtlas,
     ScreenResolutionChanged,
     InvalidBufferRegistration,
+
+    // Other errors
+    Other,
 }
 
 impl Display for NeedleError {
@@ -51,6 +54,9 @@ impl Display for NeedleError {
             Self::InvalidBufferRegistration => {
                 "Renderer | Buffer without bind group/bind group layout has been registered"
                     .to_string()
+            }
+            Self::Other => {
+                "Other | Unknown error has been detected! Please file an issue to the repository if possible.".to_string()
             }
         };
 

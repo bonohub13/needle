@@ -2,7 +2,7 @@ use super::{Position, Text};
 use serde::Deserialize;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FpsConfig {
     pub enable: bool,
     pub frame_limit: u8,
