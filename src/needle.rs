@@ -307,11 +307,14 @@ impl<'a> ApplicationHandler for Needle<'a> {
                                 }
                             }
                             NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {
-                                log::error!("OutOfMemory");
+                                log::error!("{}", NeedleError::OutOfMemory);
                                 event_loop.exit();
                             }
                             NeedleError::Timeout => {
-                                log::warn!("Surface Timeout Detected!");
+                                log::warn!("{}", NeedleError::Timeout);
+                            }
+                            NeedleError::Other => {
+                                log::error!("{}", NeedleError::Other);
                             }
                             _ => (),
                         },

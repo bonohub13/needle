@@ -15,7 +15,7 @@ pub struct AppBase<'a> {
 impl<'a> AppBase<'a> {
     pub async fn new(window: Arc<Window>) -> Result<Self> {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -110,6 +110,7 @@ impl<'a> AppBase<'a> {
                     wgpu::SurfaceError::Outdated => NeedleError::Outdated,
                     wgpu::SurfaceError::Lost => NeedleError::Lost,
                     wgpu::SurfaceError::OutOfMemory => NeedleError::OutOfMemory,
+                    wgpu::SurfaceError::Other => NeedleError::Other,
                 };
 
                 Err(err)

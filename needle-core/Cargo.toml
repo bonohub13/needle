@@ -7,12 +7,12 @@ edition = "2021"
 anyhow = "1.0.93"
 bytemuck = "1.20.0"
 chrono = "0.4.38"
-directories = "5.0.1"
+directories = "6.0.0"
 env_logger = "0.11.5"
-glyphon = "0.7.0"
+glyphon = "0.8.0"
 log = "0.4.22"
 pollster = "0.4.0"
 serde = {version = "1.0.215", features = ["derive"]}
 toml = "0.8.19"
-wgpu = {version = "23.0.0", features = ["spirv"]}
+wgpu = "24.0.1"
 winit = { version = "0.30" }
