@@ -20,7 +20,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct NeedleConfig {
     pub background_color: [f64; 4],
     pub time: TimeConfig,
@@ -154,6 +154,7 @@ impl Default for NeedleConfig {
             background_color: [0.0, 0.0, 0.0, 1.0],
             time: TimeConfig {
                 format: TimeFormat::HourMinSec,
+                font: None,
                 config: Text {
                     scale: 1.0,
                     color: [255, 255, 255, 255],

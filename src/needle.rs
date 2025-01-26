@@ -64,22 +64,24 @@ impl<'a> Needle<'a> {
             )?;
             let time_renderer = TextRenderer::new(
                 &config.time.config,
+                config.time.font.clone(),
                 &window_size,
                 window_scale_factor,
                 app_base.device(),
                 app_base.queue(),
                 app_base.surface_config().format,
                 Some(depth_stencil_state.clone()),
-            );
+            )?;
             let fps_renderer = TextRenderer::new(
                 &config.fps.config,
+                None,
                 &window_size,
                 window_scale_factor,
                 app_base.device(),
                 app_base.queue(),
                 app_base.surface_config().format,
                 Some(depth_stencil_state.clone()),
-            );
+            )?;
 
             self.background_renderer = Some(background_renderer);
             self.time_renderer = Some(time_renderer);
