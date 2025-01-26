@@ -37,6 +37,7 @@ impl<'a> Needle<'a> {
     pub fn set_config(&mut self, config: Arc<NeedleConfig>) {
         self.config = Some(config.clone());
         self.fps_limit = Duration::from_secs_f64(1.0 / config.fps.frame_limit as f64);
+        self.fps_update_limit = Duration::from_secs_f64(1.0);
     }
 
     fn create_renderers(&mut self) -> Result<()> {
@@ -295,6 +296,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                                 self.fps_update = std::time::Instant::now();
                                 self.current_frame = 0;
                             }
+                            std::thread::sleep(self.next_frame - std::time::Instant::now());
                         }
                         Err(e) => match e {
                             NeedleError::Lost | NeedleError::Outdated => {
