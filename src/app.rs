@@ -10,7 +10,14 @@ pub fn run(config: Arc<NeedleConfig>) -> Result<()> {
 
     app.set_config(config);
     event_loop.set_control_flow(ControlFlow::Poll);
-    event_loop.run_app(&mut app)?;
+    match event_loop.run_app(&mut app) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            log::error!("{}", e);
+
+            Err(e)
+        }
+    }?;
 
     Ok(())
 }

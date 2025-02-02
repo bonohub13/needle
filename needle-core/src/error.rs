@@ -24,6 +24,12 @@ pub enum NeedleError {
     ScreenResolutionChanged,
     InvalidBufferRegistration,
 
+    // cURL related errors
+    InvalidURLFormat,
+    CallbackError,
+    ShaderDownloadFailure,
+    WriteError,
+
     // Other errors
     Other,
 }
@@ -54,6 +60,18 @@ impl Display for NeedleError {
             Self::InvalidBufferRegistration => {
                 "Renderer | Buffer without bind group/bind group layout has been registered"
                     .to_string()
+            }
+            Self::InvalidURLFormat => {
+                "URL | Invalid URL format detected".to_string()
+            }
+            Self::CallbackError => {
+                "URL | Error detected in callback function".to_string()
+            }
+            Self::ShaderDownloadFailure => {
+                "URL | Failed to download shader".to_string()
+            }
+            Self::WriteError => {
+                "URL | Failed to write to file".to_string()
             }
             Self::Other => {
                 "Other | Unknown error has been detected! Please file an issue to the repository if possible.".to_string()

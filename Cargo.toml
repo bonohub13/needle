@@ -12,6 +12,7 @@ env_logger = "0.11.5"
 log = "0.4.22"
 needle-core = { version = "0.1.9", path = "needle-core" }
 pollster = "0.4.0"
+reqwest = { version = "0.12.12", features = ["blocking"] }
 wgpu = "24.0.1"
 winit = { version = "0.30"}
 

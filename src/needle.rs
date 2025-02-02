@@ -4,6 +4,8 @@ use needle_core::{
     Texture, Time, Vertex,
 };
 use std::{
+    fs::OpenOptions,
+    io::{copy, Write},
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -30,14 +32,36 @@ pub struct Needle<'a> {
 }
 
 impl<'a> Needle<'a> {
-    const APP_NAME: &'static str = "needle";
+    const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     const VERTEX_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.vert.spv";
     const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
 
-    pub fn set_config(&mut self, config: Arc<NeedleConfig>) {
+    pub fn set_config(&mut self, config: Arc<NeedleConfig>) -> Result<()> {
+        let vert_shader_path =
+            NeedleConfig::config_path(false, Some(Self::VERTEX_SHADER_DEFAULT_PATH))?;
+        let frag_shader_path =
+            NeedleConfig::config_path(false, Some(Self::FRAGMENT_SHADER_DEFAULT_PATH))?;
+
         self.config = Some(config.clone());
         self.fps_limit = Duration::from_secs_f64(1.0 / config.fps.frame_limit as f64);
         self.fps_update_limit = Duration::from_secs_f64(1.0);
+
+        if !(vert_shader_path.as_path().exists() && frag_shader_path.as_path().exists()) {
+            Self::download_shader()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn download_shader() -> Result<()> {
+        let vert_shader = "shader.vert.spv";
+        let frag_shader = "shader.frag.spv";
+
+        Self::write(vert_shader)?;
+        Self::write(frag_shader)?;
+
+        Ok(())
     }
 
     fn create_renderers(&mut self) -> Result<()> {
@@ -213,6 +237,27 @@ impl<'a> Needle<'a> {
 
             Ok(())
         })
+    }
+
+    fn write(path: &str) -> Result<()> {
+        let release_url_base = "https://github.com/bonohub13/needle/releases/download";
+        let write_path =
+            match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{}", path))) {
+                Ok(p) => Ok(p),
+                Err(_) => Err(NeedleError::InvalidPath),
+            }?;
+        let src_url = format!("{}/{}/{}", release_url_base, Self::VERSION, path);
+        let mut file = match OpenOptions::new().write(true).create(true).open(write_path) {
+            Ok(file) => Ok(file),
+            Err(_) => Err(NeedleError::InvalidPath),
+        }?;
+        let resp = reqwest::blocking::get(&src_url)?;
+        let content = resp.bytes()?;
+
+        println!("URL : {}", src_url);
+        copy(&mut content.as_ref(), &mut file)?;
+
+        Ok(())
     }
 }
 
