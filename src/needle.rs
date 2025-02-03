@@ -4,8 +4,8 @@ use needle_core::{
     Texture, Time, Vertex,
 };
 use std::{
-    fs::OpenOptions,
-    io::{copy, Write},
+    fs::{self, OpenOptions},
+    io::copy,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -38,6 +38,7 @@ impl<'a> Needle<'a> {
     const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
 
     pub fn set_config(&mut self, config: Arc<NeedleConfig>) -> Result<()> {
+        let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
         let vert_shader_path =
             NeedleConfig::config_path(false, Some(Self::VERTEX_SHADER_DEFAULT_PATH))?;
         let frag_shader_path =
@@ -47,7 +48,11 @@ impl<'a> Needle<'a> {
         self.fps_limit = Duration::from_secs_f64(1.0 / config.fps.frame_limit as f64);
         self.fps_update_limit = Duration::from_secs_f64(1.0);
 
-        if !(vert_shader_path.as_path().exists() && frag_shader_path.as_path().exists()) {
+        if !(vert_shader_path.exists() && frag_shader_path.exists()) {
+            if !shader_path.exists() {
+                fs::create_dir_all(shader_path)?;
+            }
+
             Self::download_shader()?;
         }
 
@@ -254,7 +259,7 @@ impl<'a> Needle<'a> {
         let resp = reqwest::blocking::get(&src_url)?;
         let content = resp.bytes()?;
 
-        println!("URL : {}", src_url);
+        log::debug!("URL : {}", src_url);
         copy(&mut content.as_ref(), &mut file)?;
 
         Ok(())

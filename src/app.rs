@@ -8,7 +8,7 @@ pub fn run(config: Arc<NeedleConfig>) -> Result<()> {
     let event_loop = EventLoop::new()?;
     let mut app = Needle::default();
 
-    app.set_config(config);
+    app.set_config(config)?;
     event_loop.set_control_flow(ControlFlow::Poll);
     match event_loop.run_app(&mut app) {
         Ok(_) => Ok(()),
