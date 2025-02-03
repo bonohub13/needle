@@ -18,14 +18,19 @@ clean:
 	@$(CARGO) clean
 	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 	@rm -rvf ${SPIRV_DIR}
+	@rm -rvf ${HOME}/.config/needle/shaders
 
-pkg: clean pkg-linux_docker pkg-windows_docker
+pkg: clean shader-docker pkg-linux_docker pkg-windows_docker
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle .
 	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe .
 	@sha256sum needle \
 		| tee needle.sha256
 	@sha256sum needle.exe \
 		| tee needle.exe.sha256
+	@sha256sum shaders/spv/shader.vert.spv \
+		| tee shaders.vert.spv.sha256
+	@sha256sum shaders/spv/shader.frag.spv \
+		| tee shaders.frag.spv.sha256
 
 fmt:
 	@$(CARGO) fmt
