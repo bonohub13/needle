@@ -10,6 +10,7 @@ include ${MAKEFILES_DIR}/linux.mk
 include ${MAKEFILES_DIR}/windows.mk
 include ${MAKEFILES_DIR}/shader.mk
 include ${MAKEFILES_DIR}/docker.mk
+include ${MAKEFILES_DIR}/docs.mk
 
 all: build run
 
