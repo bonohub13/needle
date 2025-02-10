@@ -10,6 +10,8 @@ chrono = "0.4.38"
 directories = "6.0.0"
 env_logger = "0.11.5"
 glyphon = "0.8.0"
+imgui = "0.12.0"
+imgui-winit-support = "0.13.0"
 log = "0.4.22"
 pollster = "0.4.0"
 serde = {version = "1.0.215", features = ["derive"]}
