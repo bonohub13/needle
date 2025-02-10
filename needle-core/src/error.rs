@@ -13,6 +13,9 @@ pub enum NeedleError {
     InvalidFpsTextPosition(Position),
     TextPositionOverlapping,
 
+    // Imgui related errors
+    FailedToPrepareFrame,
+
     // Surface related errors
     Lost,
     Outdated,
@@ -50,6 +53,9 @@ impl Display for NeedleError {
             }
             Self::TextPositionOverlapping => {
                 "AppConfig | Text position for FPS and time is overlapping".to_string()
+            }
+            Self::FailedToPrepareFrame => {
+                "Imgui | Failed to prepare frame".to_string()
             }
             Self::Lost => "Surface | Lost".to_string(),
             Self::Outdated => "Surface | Outdated".to_string(),

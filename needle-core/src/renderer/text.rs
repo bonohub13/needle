@@ -29,7 +29,7 @@ impl TextRenderer {
         let mut system = match font {
             Some(font_name) => {
                 let font = Self::find_font(&font_name)?;
-                let mut system = FontSystem::new_with_fonts([Source::File(font)].into_iter());
+                let mut system = FontSystem::new_with_fonts([Source::File(font)]);
 
                 system
                     .db_mut()
@@ -159,14 +159,12 @@ impl TextRenderer {
             .render(&self.atlas, &self.viewport, render_pass)
         {
             Ok(_) => Ok(()),
-            Err(err) => {
-                return match err {
-                    glyphon::RenderError::RemovedFromAtlas => Err(NeedleError::RemovedFromAtlas),
-                    glyphon::RenderError::ScreenResolutionChanged => {
-                        Err(NeedleError::ScreenResolutionChanged)
-                    }
+            Err(err) => match err {
+                glyphon::RenderError::RemovedFromAtlas => Err(NeedleError::RemovedFromAtlas),
+                glyphon::RenderError::ScreenResolutionChanged => {
+                    Err(NeedleError::ScreenResolutionChanged)
                 }
-            }
+            },
         }
     }
 

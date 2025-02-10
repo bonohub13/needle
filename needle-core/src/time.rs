@@ -47,7 +47,7 @@ impl Time {
 
         for i in 1..digit {
             if value < 10u32.pow(i) {
-                prefix = prefix + "0";
+                prefix += "0";
             }
         }
 

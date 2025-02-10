@@ -42,101 +42,95 @@ pub enum NeedleLabel<'a> {
     BindGroup(&'a str),
 }
 
-impl NeedleLabel<'_> {
-    pub fn to_string(&self) -> String {
-        format!("{}", self)
-    }
-}
-
-impl<'a> Display for NeedleLabel<'a> {
+impl Display for NeedleLabel<'_> {
     fn fmt(&self, f: &mut Formatter) -> Result {
         let label = match self {
             Self::Device(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Device".to_string()
                 } else {
                     format!("{} Device", label)
                 }
             }
             Self::PipelineLayout(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Pipeline Layout".to_string()
                 } else {
                     format!("{} Pipeline Layout", label)
                 }
             }
             Self::Pipeline(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Render Pipeline".to_string()
                 } else {
                     format!("{} Pipeline", label)
                 }
             }
             Self::CommandEncoder(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Command Encoder".to_string()
                 } else {
                     format!("{} Command Encoder", label)
                 }
             }
             Self::RenderPass(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Render Pass".to_string()
                 } else {
                     format!("{} Render Pass", label)
                 }
             }
             Self::Renderer(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Renderer".to_string()
                 } else {
                     format!("{} Renderer", label)
                 }
             }
             Self::Shader(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Shader".to_string()
                 } else {
                     format!("{} Shader", label)
                 }
             }
             Self::Texture(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Texture".to_string()
                 } else {
                     format!("{} Texture", label)
                 }
             }
             Self::VertexBuffer(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Vertex Buffer".to_string()
                 } else {
                     format!("{} Vertex Buffer", label)
                 }
             }
             Self::IndexBuffer(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Index Buffer".to_string()
                 } else {
                     format!("{} Index Buffer", label)
                 }
             }
             Self::UniformBuffer(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Uniform Buffer".to_string()
                 } else {
                     format!("{} Uniform Buffer", label)
                 }
             }
             Self::BindGroupLayout(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Bind Group Layout".to_string()
                 } else {
                     format!("{} Bind Group Layout", label)
                 }
             }
             Self::BindGroup(label) => {
-                if label.len() == 0 {
+                if label.is_empty() {
                     "Bind Group".to_string()
                 } else {
                     format!("{} Bind Group", label)

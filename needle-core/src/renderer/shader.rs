@@ -146,7 +146,8 @@ impl ShaderRenderer {
         let mut buffer = vec![];
 
         reader.read_to_end(&mut buffer)?;
-        if (buffer.len() & 4) != 0 {
+        #[allow(clippy::same_item_push)] // 4 byte alignment is required
+        if (buffer.len() % 4) != 0 {
             for _ in 0..(buffer.len() % 4) {
                 buffer.push(0);
             }

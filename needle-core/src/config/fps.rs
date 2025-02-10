@@ -11,20 +11,17 @@ pub struct FpsConfig {
 
 impl FpsConfig {
     pub fn is_valid_position(&self) -> bool {
-        match self.config.position {
-            Position::TopLeft
-            | Position::TopRight
-            | Position::BottomLeft
-            | Position::BottomRight => true,
-            _ => false,
-        }
+        matches!(
+            self.config.position,
+            Position::TopLeft | Position::TopRight | Position::BottomLeft | Position::BottomRight
+        )
     }
 }
 
 impl Display for FpsConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let config = format!("{}", self.config);
-        let config = config.lines().into_iter().collect::<Vec<_>>();
+        let config = config.lines().collect::<Vec<_>>();
 
         writeln!(f, "# FPS visualization setting")?;
         writeln!(f, "#  true            : Enable FPS visualization")?;
@@ -39,12 +36,10 @@ impl Display for FpsConfig {
                 } else {
                     writeln!(f, "{}", line)?;
                 }
+            } else if i == (config.len() - 1) {
+                return write!(f, "config.{}", line);
             } else {
-                if i == (config.len() - 1) {
-                    return write!(f, "config.{}", line);
-                } else {
-                    writeln!(f, "config.{}", line)?;
-                }
+                writeln!(f, "config.{}", line)?;
             }
         }
 

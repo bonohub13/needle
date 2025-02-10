@@ -1,8 +1,15 @@
 use crate::{NeedleErr, NeedleError, NeedleLabel, Vertex};
 use anyhow::{Context, Result};
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 use wgpu::{util::DeviceExt, Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
+
+pub struct ImguiState {
+    pub context: imgui::Context,
+    pub platform: imgui_winit_support::WinitPlatform,
+    hidpi_factor: f64,
+    last_frame: Instant,
+}
 
 pub struct AppBase<'a> {
     size: PhysicalSize<u32>,
@@ -12,7 +19,79 @@ pub struct AppBase<'a> {
     config: SurfaceConfiguration,
 }
 
-impl<'a> AppBase<'a> {
+impl ImguiState {
+    pub fn new(hidpi_factor: f64, window: &winit::window::Window) -> Self {
+        let mut context = imgui::Context::create();
+        let mut platform = imgui_winit_support::WinitPlatform::new(&mut context);
+        let font_size = (13.0 * hidpi_factor) as f32;
+
+        platform.attach_window(
+            context.io_mut(),
+            window,
+            imgui_winit_support::HiDpiMode::Default,
+        );
+        context.set_ini_filename(None);
+        context.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
+        context
+            .fonts()
+            .add_font(&[imgui::FontSource::DefaultFontData {
+                config: Some(imgui::FontConfig {
+                    oversample_h: 1,
+                    pixel_snap_h: true,
+                    size_pixels: font_size,
+                    ..Default::default()
+                }),
+            }]);
+
+        Self {
+            context,
+            platform,
+            hidpi_factor,
+            last_frame: Instant::now(),
+        }
+    }
+
+    pub fn resize(&mut self, hidpi_factor: f64) {
+        self.hidpi_factor = hidpi_factor;
+    }
+
+    pub fn update(&mut self, now: Instant) {
+        self.context
+            .io_mut()
+            .update_delta_time(now - self.last_frame);
+        self.last_frame = now;
+    }
+
+    pub fn handle_event(
+        &mut self,
+        window: &winit::window::Window,
+        event: &winit::event::Event<()>,
+    ) {
+        self.platform
+            .handle_event::<()>(self.context.io_mut(), window, event)
+    }
+
+    pub fn setup_ui<F: FnOnce(&mut imgui::Ui)>(
+        &mut self,
+        window: &winit::window::Window,
+        func: F,
+    ) -> NeedleErr<()> {
+        match self.platform.prepare_frame(self.context.io_mut(), window) {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                println!("{} ({})", NeedleError::FailedToPrepareFrame, err);
+
+                Err(NeedleError::FailedToPrepareFrame)
+            }
+        }?;
+
+        func(self.context.frame());
+
+        Ok(())
+    }
+}
+
+impl AppBase<'_> {
     pub async fn new(window: Arc<Window>) -> Result<Self> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -27,8 +106,7 @@ impl<'a> AppBase<'a> {
         let adapters = instance.enumerate_adapters(wgpu::Backends::all());
         let adapter = adapters
             .iter()
-            .filter(|adapter| adapter.is_surface_supported(&surface))
-            .next()
+            .find(|adapter| adapter.is_surface_supported(&surface))
             .context("Failed to find valid adapter")?;
         let (device, queue) = adapter
             .request_device(
@@ -42,7 +120,7 @@ impl<'a> AppBase<'a> {
             .await?;
 
         // Config
-        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_caps = surface.get_capabilities(adapter);
         let surface_format = surface_caps
             .formats
             .iter()

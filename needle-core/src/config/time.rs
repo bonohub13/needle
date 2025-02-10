@@ -13,7 +13,7 @@ pub struct TimeConfig {
 impl Display for TimeConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let config = format!("{}", self.config);
-        let config = config.lines().into_iter().collect::<Vec<_>>();
+        let config = config.lines().collect::<Vec<_>>();
 
         writeln!(f, "# Time format")?;
         writeln!(f, "#  HourMinSec : HH:MM:SS (default)")?;
@@ -42,12 +42,10 @@ impl Display for TimeConfig {
                 } else {
                     writeln!(f, "{}", line)?;
                 }
+            } else if i == (config.len() - 1) {
+                return write!(f, "config.{}", line);
             } else {
-                if i == (config.len() - 1) {
-                    return write!(f, "config.{}", line);
-                } else {
-                    writeln!(f, "config.{}", line)?;
-                }
+                writeln!(f, "config.{}", line)?;
             }
         }
 
