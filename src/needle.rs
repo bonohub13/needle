@@ -1,7 +1,7 @@
 use anyhow::Result;
 use needle_core::{
-    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, ShaderRenderer, TextRenderer,
-    Texture, Time, Vertex,
+    AppBase, ImguiState, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, ShaderRenderer,
+    TextRenderer, Texture, Time, Vertex,
 };
 use std::{
     fs::{self, OpenOptions},
@@ -11,13 +11,15 @@ use std::{
 };
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, KeyEvent, WindowEvent},
+    event::{DeviceEvent, DeviceId, ElementState, Event, KeyEvent, WindowEvent},
+    event_loop::ActiveEventLoop,
     keyboard::{KeyCode, PhysicalKey},
     window::Window,
 };
 
 pub struct Needle<'a> {
     window: Option<Arc<Window>>,
+    imgui: Option<ImguiState>,
     app_base: Option<AppBase<'a>>,
     config: Option<Arc<NeedleConfig>>,
     depth_texture: Option<Texture>,
@@ -31,11 +33,12 @@ pub struct Needle<'a> {
     fps_update_limit: Duration,
 }
 
-impl<'a> Needle<'a> {
+impl Needle<'_> {
     const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     const VERTEX_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.vert.spv";
     const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
+    const CONFIG_WINDOW_SUFFIX: &'static str = "config";
 
     pub fn set_config(&mut self, config: Arc<NeedleConfig>) -> Result<()> {
         let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
@@ -131,12 +134,14 @@ impl<'a> Needle<'a> {
 
     fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
-            if let (Some(_window), Some(app_base), Some(time), Some(fps)) = (
+            if let (Some(window), Some(imgui), Some(app_base), Some(time), Some(fps)) = (
                 self.window.as_ref(),
+                self.imgui.as_mut(),
                 self.app_base.as_mut(),
                 self.time_renderer.as_mut(),
                 self.fps_renderer.as_mut(),
             ) {
+                imgui.resize(window.scale_factor());
                 app_base.resize(size);
                 self.depth_texture = Some(Texture::create_depth_texture(
                     app_base.device(),
@@ -149,11 +154,12 @@ impl<'a> Needle<'a> {
         }
     }
 
-    fn update(&mut self) -> Result<()> {
+    fn update(&mut self) -> Result<Instant> {
         let app_base = self
             .app_base
             .as_ref()
             .expect("needle_core::AppBase not available");
+        let imgui = self.imgui.as_mut().expect("ImguiState not available");
         let config = self.config.as_ref().expect("NeedleConfig not available");
         let time = self
             .time_renderer
@@ -163,12 +169,14 @@ impl<'a> Needle<'a> {
             .fps_renderer
             .as_mut()
             .expect("FPS Renderer not available");
+        let now = Instant::now();
         let local = chrono::Local::now();
         let time_formatter = Time::new(config.time.format);
 
+        imgui.update(now);
         time.set_text(&time_formatter.time_to_str(&local));
         time.update(app_base.queue(), app_base.surface_config());
-        time.prepare(5.0, &app_base.device(), app_base.queue())?;
+        time.prepare(5.0, app_base.device(), app_base.queue())?;
 
         if config.fps.enable {
             fps.set_text(&format!(
@@ -176,13 +184,15 @@ impl<'a> Needle<'a> {
                 config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
             ));
             fps.update(app_base.queue(), app_base.surface_config());
-            fps.prepare(5.0, &app_base.device(), app_base.queue())?;
+            fps.prepare(5.0, app_base.device(), app_base.queue())?;
         }
 
-        Ok(())
+        Ok(now)
     }
 
     fn render(&mut self) -> NeedleErr<()> {
+        let window = self.window.as_ref().expect("Windows not available");
+        let imgui = self.imgui.as_mut().expect("ImguiState not available");
         let app_base = self
             .app_base
             .as_mut()
@@ -210,6 +220,17 @@ impl<'a> Needle<'a> {
             a: 0.0,
         };
 
+        imgui.setup_ui(window, |ui| {
+            let window_name = format!("{}: {}", Self::APP_NAME, Self::CONFIG_WINDOW_SUFFIX);
+            let window = ui.window(&window_name);
+
+            window
+                .size([300.0, 100.0], imgui::Condition::FirstUseEver)
+                .build(|| {
+                    ui.text("configuration");
+                    ui.separator();
+                });
+        })?;
         app_base.render(|current_texture, encoder| {
             let view = current_texture
                 .texture
@@ -244,6 +265,12 @@ impl<'a> Needle<'a> {
         })
     }
 
+    fn handle_events(&mut self, event: &Event<()>) {
+        if let (Some(window), Some(imgui)) = (self.window.as_ref(), self.imgui.as_mut()) {
+            imgui.handle_event(window, event)
+        }
+    }
+
     fn write(path: &str) -> Result<()> {
         let release_url_base = "https://github.com/bonohub13/needle/releases/download";
         let write_path =
@@ -252,7 +279,12 @@ impl<'a> Needle<'a> {
                 Err(_) => Err(NeedleError::InvalidPath),
             }?;
         let src_url = format!("{}/{}/{}", release_url_base, Self::VERSION, path);
-        let mut file = match OpenOptions::new().write(true).create(true).open(write_path) {
+        let mut file = match OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(write_path)
+        {
             Ok(file) => Ok(file),
             Err(_) => Err(NeedleError::InvalidPath),
         }?;
@@ -266,7 +298,7 @@ impl<'a> Needle<'a> {
     }
 }
 
-impl<'a> ApplicationHandler for Needle<'a> {
+impl ApplicationHandler for Needle<'_> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.window.is_none() {
             let window_attr = Window::default_attributes()
@@ -278,6 +310,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     .create_window(window_attr)
                     .expect("Failed to create window."),
             );
+            let imgui = ImguiState::new(window.scale_factor(), &window);
             let app_base = pollster::block_on(AppBase::new(window.clone()))
                 .expect("Failed to create needle_core::AppBase");
             let depth_texture = Texture::create_depth_texture(
@@ -287,11 +320,11 @@ impl<'a> ApplicationHandler for Needle<'a> {
             );
 
             self.window = Some(window.clone());
+            self.imgui = Some(imgui);
             self.app_base = Some(app_base);
             self.depth_texture = Some(depth_texture);
-            match self.create_renderers() {
-                Err(e) => panic!("{}", e),
-                _ => (),
+            if let Err(e) = self.create_renderers() {
+                panic!("{}", e);
             }
         }
     }
@@ -299,7 +332,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
+        window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
         self.current_frame += 1;
@@ -321,6 +354,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
             }
             WindowEvent::RedrawRequested => {
                 if self.window.is_some()
+                    && self.imgui.is_some()
                     && self.app_base.is_some()
                     && self.config.is_some()
                     && self.depth_texture.is_some()
@@ -330,20 +364,21 @@ impl<'a> ApplicationHandler for Needle<'a> {
                 {
                     /* Check for window has been done in the if statement above */
                     self.window.as_ref().unwrap().request_redraw();
-                    match self.update() {
+                    let now = match self.update() {
                         Err(e) => {
                             log::error!("{}", e);
                             event_loop.exit();
+                            None
                         }
-                        _ => (),
-                    };
+                        Ok(now) => Some(now),
+                    }
+                    .unwrap();
                     match self.render() {
                         Ok(_) => {
                             self.next_frame += self.fps_limit;
 
-                            if (self.fps_update - std::time::Instant::now()) > self.fps_update_limit
-                            {
-                                self.fps_update = std::time::Instant::now();
+                            if (self.fps_update - now) > self.fps_update_limit {
+                                self.fps_update = now;
                                 self.current_frame = 0;
                             }
                             std::thread::sleep(self.next_frame - std::time::Instant::now());
@@ -373,13 +408,32 @@ impl<'a> ApplicationHandler for Needle<'a> {
             }
             _ => (),
         }
+        self.handle_events(&winit::event::Event::WindowEvent { window_id, event });
+    }
+
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: ()) {
+        self.handle_events(&Event::UserEvent(event))
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        self.handle_events(&Event::DeviceEvent { device_id, event })
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        self.handle_events(&Event::AboutToWait)
     }
 }
 
-impl<'a> Default for Needle<'a> {
+impl Default for Needle<'_> {
     fn default() -> Self {
         Self {
             window: None,
+            imgui: None,
             app_base: None,
             config: None,
             depth_texture: None,
