@@ -13,13 +13,13 @@ pub enum AppOptions {
     Unknown(String),
 }
 
-impl<'a> AppOptions {
+impl AppOptions {
     #[cfg(windows)]
-    const NEWLINE: &'a str = "\r\n";
+    const NEWLINE: &str = "\r\n";
     #[cfg(not(windows))]
-    const NEWLINE: &'a str = "\n";
+    const NEWLINE: &str = "\n";
     pub fn new() -> Vec<Self> {
-        let args = env::args().into_iter().collect::<Vec<_>>();
+        let args = env::args().collect::<Vec<_>>();
         let mut skip_counter = 0;
         let mut ret = vec![];
 
@@ -29,9 +29,9 @@ impl<'a> AppOptions {
                 continue;
             }
 
-            Self::parse_str(&arg).iter_mut().for_each(|opt| match opt {
+            Self::parse_str(arg).iter_mut().for_each(|opt| match opt {
                 Self::ConfigFilePath(ref mut path) | Self::GenerateConfig(ref mut path) => {
-                    if path == "" {
+                    if path.is_empty() {
                         *path = if ((i + 2) < args.len()) && (args[i + 2] != "=") {
                             // OPTION FILENAME
                             skip_counter = 1;
@@ -132,11 +132,13 @@ impl Display for AppOptions {
                     "                                   - Windows: %AppData%\\Roaming\\bonohub13\\needle\\config\\config.toml",
                     "   -v, --version               Print version info and exit",
                 ];
+                let mut msg = String::new();
 
                 lines
                     .iter()
-                    .map(|s| format!("{}{}", s, Self::NEWLINE))
-                    .collect()
+                    .for_each(|s| msg += &(s.to_string() + Self::NEWLINE));
+
+                msg
             }
             Self::Unknown(err) => {
                 let err = err
