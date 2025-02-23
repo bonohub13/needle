@@ -1,5 +1,7 @@
 /target
 /needle-core/target
+/Cargo.lock
+/needle-core/Cargo.lock
 /*.sha256
 /needle
 /needle.exe
