@@ -1,7 +1,7 @@
 use anyhow::Result;
 use needle_core::{
-    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, ShaderRenderer, TextRenderer,
-    Texture, Time, Vertex,
+    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, Renderer, ShaderRenderer,
+    TextRenderer, Texture, Time, Vertex,
 };
 use std::{
     fs::{self, OpenOptions},
@@ -236,7 +236,7 @@ impl<'a> Needle<'a> {
                 occlusion_query_set: None,
             });
 
-            background_renderer.render(&mut render_pass);
+            background_renderer.render(&mut render_pass)?;
             time_renderer.render(&mut render_pass)?;
             fps_renderer.render(&mut render_pass)?;
 
