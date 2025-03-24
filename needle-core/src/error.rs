@@ -1,87 +1,57 @@
 use crate::Position;
-use std::{
-    error::Error,
-    fmt::{self, Display, Formatter},
-};
+use std::error::Error as StdError;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum NeedleError {
     // AppConfig
+    #[error("AppConfig | Invalid path")]
     InvalidPath,
+    #[error("AppConfig | Config already exists")]
     ConfigExists,
+    #[error("AppConfig | Config file doesn't exist ({0})")]
     ConfigNonExistant(Box<str>),
+    #[error("AppConfig | Text position is invalid. Must be corners. ({0})")]
     InvalidFpsTextPosition(Position),
+    #[error("AppConfig | Text position for FPS and time is overlapping")]
     TextPositionOverlapping,
 
     // Surface related errors
+    #[error("Surface | Lost")]
     Lost,
+    #[error("Surface | Outdated")]
     Outdated,
+    #[error("Surface | Out of memory")]
     OutOfMemory,
+    #[error("Surface | Timeout")]
     Timeout,
 
     // Renderer related errors
+    #[error("Renderer | Removed from atlas")]
     RemovedFromAtlas,
+    #[error("Renderer | Screen resolution changed")]
     ScreenResolutionChanged,
+    #[error("Renderer | Buffer without bind group/bind group layout has been registered")]
     InvalidBufferRegistration,
+    #[error("Renderer | Buffer without bind group/bind group layout has been registered ({0})")]
+    RendererUpdateFailure(Box<dyn StdError>),
 
     // cURL related errors
+    #[error("URL | Invalid URL format detected")]
     InvalidURLFormat,
+    #[error("URL | Error detected in callback function")]
     CallbackError,
+    #[error("URL | Failed to download shader")]
     ShaderDownloadFailure,
+    #[error("URL | Failed to write to file")]
     WriteError,
 
     // Other errors
+    #[error("Other | Unknown error has been detected! Please file an issue to the repository if possible.")]
     Other,
 }
 
-impl Display for NeedleError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let msg = match self {
-            Self::InvalidPath => "AppConfig | Invalid path".to_string(),
-            Self::ConfigExists => "AppConfig | Config already exists".to_string(),
-            Self::ConfigNonExistant(path) => {
-                format!("AppConfig | Config file doesn't exist ({})", path)
-            }
-            Self::InvalidFpsTextPosition(pos) => {
-                format!(
-                    "AppConfig | Text position is invalid. Must be corners. ({})",
-                    pos
-                )
-            }
-            Self::TextPositionOverlapping => {
-                "AppConfig | Text position for FPS and time is overlapping".to_string()
-            }
-            Self::Lost => "Surface | Lost".to_string(),
-            Self::Outdated => "Surface | Outdated".to_string(),
-            Self::OutOfMemory => "Surface | Out of memory".to_string(),
-            Self::Timeout => "Surface | Timeout".to_string(),
-            Self::RemovedFromAtlas => "Renderer | Removed from atlas".to_string(),
-            Self::ScreenResolutionChanged => "Renderer | Screen resolution changed".to_string(),
-            Self::InvalidBufferRegistration => {
-                "Renderer | Buffer without bind group/bind group layout has been registered"
-                    .to_string()
-            }
-            Self::InvalidURLFormat => {
-                "URL | Invalid URL format detected".to_string()
-            }
-            Self::CallbackError => {
-                "URL | Error detected in callback function".to_string()
-            }
-            Self::ShaderDownloadFailure => {
-                "URL | Failed to download shader".to_string()
-            }
-            Self::WriteError => {
-                "URL | Failed to write to file".to_string()
-            }
-            Self::Other => {
-                "Other | Unknown error has been detected! Please file an issue to the repository if possible.".to_string()
-            }
-        };
-
-        writeln!(f, "[ERROR]: {}", msg)
-    }
-}
-
-impl Error for NeedleError {}
+unsafe impl Send for NeedleError {}
+unsafe impl Sync for NeedleError {}
 
 pub type NeedleErr<T> = Result<T, NeedleError>;

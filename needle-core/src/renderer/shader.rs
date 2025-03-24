@@ -1,11 +1,12 @@
-use crate::{NeedleError, NeedleLabel};
+use crate::{NeedleErr, NeedleError, NeedleLabel};
 use anyhow::{bail, Result};
 use std::{
     fs::OpenOptions,
     io::Read,
     path::{Path, PathBuf},
 };
-use wgpu::{Buffer, RenderPipeline, ShaderModule};
+use wgpu::{Buffer, Device, Queue, RenderPass, RenderPipeline, ShaderModule, SurfaceConfiguration};
+use winit::dpi::PhysicalSize;
 
 pub struct ShaderRenderer {
     _vert_shader: ShaderModule,
@@ -113,10 +114,6 @@ impl ShaderRenderer {
         })
     }
 
-    pub fn update<F: FnOnce(&mut [wgpu::Buffer])>(&mut self, func: F) {
-        func(&mut self.vertex_buffers);
-    }
-
     pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
         /* Vertex buffers without index buffer requires manual draw call. */
         render_pass.set_pipeline(&self.pipeline);
@@ -155,5 +152,31 @@ impl ShaderRenderer {
         let buffer = Box::from_iter(buffer);
 
         Ok(buffer)
+    }
+}
+
+impl super::Renderer for ShaderRenderer {
+    fn resize(&mut self, _size: &PhysicalSize<u32>) {}
+
+    fn update(&mut self, _queue: &Queue, _config: &SurfaceConfiguration) {}
+
+    fn prepare(&mut self, _margin: f32, _device: &Device, _queue: &Queue) -> NeedleErr<()> {
+        Ok(())
+    }
+
+    fn render(&mut self, render_pass: &mut RenderPass) -> NeedleErr<()> {
+        /* Vertex buffers without index buffer requires manual draw call. */
+        render_pass.set_pipeline(&self.pipeline);
+        for (i, vertex_buffer) in self.vertex_buffers.iter().enumerate() {
+            render_pass.set_vertex_buffer(i as u32, vertex_buffer.slice(..));
+        }
+        if let (Some(index_buffer), Some((base_vertex, indices))) =
+            (self.index_buffers.as_ref(), self.indices.as_ref())
+        {
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..indices.len() as u32, *base_vertex, 0..1);
+        }
+
+        Ok(())
     }
 }

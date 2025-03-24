@@ -2,6 +2,7 @@ use crate::{NeedleConfig, NeedleErr, NeedleError, Text};
 use anyhow::{bail, Result};
 use glyphon::{fontdb::Source, Buffer, FontSystem, SwashCache, TextAtlas, Viewport};
 use std::path::PathBuf;
+use wgpu::{Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
 pub struct TextRenderer {
@@ -96,11 +97,27 @@ impl TextRenderer {
         )
     }
 
-    pub fn resize(&mut self, size: &PhysicalSize<u32>) {
-        self.size = *size;
+    pub fn trim(&mut self) {
+        self.atlas.trim()
     }
 
-    pub fn update(&mut self, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration) {
+    fn find_font(font_name: &str) -> Result<PathBuf> {
+        let config_path = NeedleConfig::config_path(true, Some(&format!("fonts/{}", font_name)))?;
+
+        if config_path.exists() {
+            Ok(config_path)
+        } else {
+            bail!(NeedleError::InvalidPath)
+        }
+    }
+}
+
+impl super::Renderer for TextRenderer {
+    fn resize(&mut self, size: &PhysicalSize<u32>) {
+        self.size = *size
+    }
+
+    fn update(&mut self, queue: &Queue, config: &SurfaceConfiguration) {
         self.viewport.update(
             queue,
             glyphon::Resolution {
@@ -110,19 +127,9 @@ impl TextRenderer {
         )
     }
 
-    pub fn trim(&mut self) {
-        self.atlas.trim()
-    }
-
-    pub fn prepare(
-        &mut self,
-        margin: f32,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) -> Result<()> {
+    fn prepare(&mut self, margin: f32, device: &Device, queue: &Queue) -> NeedleErr<()> {
         let (left, top) = self.config.position(&self.size, &self.text_size(), margin);
-
-        self.renderer.prepare(
+        let result = self.renderer.prepare(
             device,
             queue,
             &mut self.system,
@@ -148,12 +155,15 @@ impl TextRenderer {
                 custom_glyphs: &[],
             }],
             &mut self.swash_cache,
-        )?;
+        );
 
-        Ok(())
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(NeedleError::RendererUpdateFailure(e.into())),
+        }
     }
 
-    pub fn render(&mut self, render_pass: &mut wgpu::RenderPass) -> NeedleErr<()> {
+    fn render(&mut self, render_pass: &mut RenderPass) -> NeedleErr<()> {
         match self
             .renderer
             .render(&self.atlas, &self.viewport, render_pass)
@@ -167,16 +177,6 @@ impl TextRenderer {
                     }
                 }
             }
-        }
-    }
-
-    fn find_font(font_name: &str) -> Result<PathBuf> {
-        let config_path = NeedleConfig::config_path(true, Some(&format!("fonts/{}", font_name)))?;
-
-        if config_path.exists() {
-            Ok(config_path)
-        } else {
-            bail!(NeedleError::InvalidPath)
         }
     }
 }
