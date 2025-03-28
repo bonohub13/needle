@@ -114,20 +114,6 @@ impl ShaderRenderer {
         })
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
-        /* Vertex buffers without index buffer requires manual draw call. */
-        render_pass.set_pipeline(&self.pipeline);
-        for (i, vertex_buffer) in self.vertex_buffers.iter().enumerate() {
-            render_pass.set_vertex_buffer(i as u32, vertex_buffer.slice(..));
-        }
-        if let (Some(index_buffer), Some((base_vertex, indices))) =
-            (self.index_buffers.as_ref(), self.indices.as_ref())
-        {
-            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..indices.len() as u32, *base_vertex, 0..1);
-        }
-    }
-
     #[inline]
     pub const fn pipeline(&self) -> &RenderPipeline {
         &self.pipeline
