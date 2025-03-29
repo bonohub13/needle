@@ -1,6 +1,6 @@
 use anyhow::Result;
 use needle_core::{
-    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, Renderer, ShaderRenderer,
+    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
     TextRenderer, Texture, Time, Vertex,
 };
 use std::{
@@ -24,6 +24,7 @@ pub struct Needle<'a> {
     background_renderer: Option<ShaderRenderer>,
     time_renderer: Option<TextRenderer>,
     fps_renderer: Option<TextRenderer>,
+    clock_info: Option<Time>,
     current_frame: u64,
     next_frame: Instant,
     fps_update: Instant,
@@ -47,6 +48,7 @@ impl<'a> Needle<'a> {
         self.config = Some(config.clone());
         self.fps_limit = Duration::from_secs_f64(1.0 / config.fps.frame_limit as f64);
         self.fps_update_limit = Duration::from_secs_f64(1.0);
+        self.clock_info = Some(Time::new(config.time.format));
 
         if !(vert_shader_path.exists() && frag_shader_path.exists()) {
             if !shader_path.exists() {
@@ -57,6 +59,16 @@ impl<'a> Needle<'a> {
         }
 
         Ok(())
+    }
+
+    pub fn set_mode(&mut self, mode: OpMode) -> Result<()> {
+        if let Some(clock_info) = self.clock_info.as_mut() {
+            clock_info.set_mode(mode);
+
+            Ok(())
+        } else {
+            Err(NeedleError::InitializationError.into())
+        }
     }
 
     pub fn download_shader() -> Result<()> {
@@ -163,10 +175,9 @@ impl<'a> Needle<'a> {
             .fps_renderer
             .as_mut()
             .expect("FPS Renderer not available");
-        let local = chrono::Local::now();
-        let time_formatter = Time::new(config.time.format);
+        let clock_info = self.clock_info.as_ref().expect("Clock Info not available");
 
-        time.set_text(&time_formatter.time_to_str(&local));
+        time.set_text(&clock_info.current_time());
         time.update(app_base.queue(), app_base.surface_config());
         time.prepare(5.0, &app_base.device(), app_base.queue())?;
 
@@ -386,6 +397,7 @@ impl<'a> Default for Needle<'a> {
             background_renderer: None,
             time_renderer: None,
             fps_renderer: None,
+            clock_info: None,
             next_frame: Instant::now(),
             fps_update: Instant::now(),
             current_frame: 0,
