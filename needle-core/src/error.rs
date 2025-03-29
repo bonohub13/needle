@@ -47,6 +47,8 @@ pub enum NeedleError {
     WriteError,
 
     // Other errors
+    #[error("Other | Initialization error detected")]
+    InitializationError,
     #[error("Other | Unknown error has been detected! Please file an issue to the repository if possible.")]
     Other,
 }
