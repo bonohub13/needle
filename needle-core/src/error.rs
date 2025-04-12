@@ -46,6 +46,10 @@ pub enum NeedleError {
     #[error("URL | Failed to write to file")]
     WriteError,
 
+    // Clock related errors
+    #[error("Clock | Failed to start countup/countdown timer")]
+    TimerStartFailure,
+
     // Other errors
     #[error("Other | Initialization error detected")]
     InitializationError,

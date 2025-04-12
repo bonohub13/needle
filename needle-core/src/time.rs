@@ -1,3 +1,4 @@
+use crate::{NeedleErr, NeedleError};
 use chrono::{DateTime, Local, Timelike};
 use serde::Deserialize;
 use std::{
@@ -23,6 +24,8 @@ pub struct Time {
     format: TimeFormat,
     mode: OpMode,
     start_time: Instant,
+    stop_time: Option<Instant>,
+    started: bool,
 }
 
 impl Time {
@@ -32,8 +35,10 @@ impl Time {
     pub fn new(format: TimeFormat) -> Self {
         Self {
             format,
-            mode: OpMode::Clock,
+            mode: OpMode::CountDownTimer(Duration::from_secs_f64(120.0)),
             start_time: Instant::now(),
+            stop_time: None,
+            started: false,
         }
     }
 
@@ -48,6 +53,49 @@ impl Time {
         }
     }
 
+    pub fn toggle_timer(&mut self) {
+        match self.mode {
+            OpMode::CountDownTimer(duration) => {
+                self.started = !self.started;
+
+                if self.started {
+                    self.start_time = match self.stop_time {
+                        Some(time) => {
+                            if time - self.start_time > duration {
+                                // Has been previously stopped and stopped has target duration
+                                self.stop_time = None;
+
+                                time
+                            } else {
+                                self.start_time
+                            }
+                        }
+                        None => Instant::now(),
+                    };
+                } else {
+                    self.stop_time = Some(Instant::now())
+                }
+            }
+            OpMode::CountUpTimer => {
+                self.started = !self.started;
+
+                if self.started {
+                    self.start_time = match self.stop_time {
+                        Some(time) => {
+                            self.stop_time = None;
+
+                            time
+                        }
+                        None => Instant::now(),
+                    };
+                } else {
+                    self.stop_time = Some(Instant::now())
+                }
+            }
+            _ => (),
+        }
+    }
+
     pub fn mode(&self) -> OpMode {
         self.mode.clone()
     }
@@ -55,11 +103,19 @@ impl Time {
     pub fn current_time(&self) -> String {
         match self.mode {
             OpMode::CountDownTimer(duration) => {
-                let delta = Instant::now() - self.start_time;
+                let delta = if !self.started {
+                    if let Some(time) = self.stop_time {
+                        time - self.start_time
+                    } else {
+                        Duration::new(0, 0)
+                    }
+                } else {
+                    Instant::now() - self.start_time
+                };
                 let delta = if delta > duration {
                     Duration::new(0, 0)
                 } else {
-                    delta
+                    duration - delta
                 };
 
                 self.duration_to_str(&delta)
