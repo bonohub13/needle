@@ -81,7 +81,7 @@ impl<'a> Needle<'a> {
         Ok(())
     }
 
-    fn start_clock(&mut self) -> NeedleErr<()> {
+    pub fn start_clock(&mut self) -> NeedleErr<()> {
         match self.clock_info.as_mut() {
             Some(clock) => {
                 clock.toggle_timer();
