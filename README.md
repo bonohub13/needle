@@ -59,6 +59,6 @@ Features in the TODO List that have been implemented will be erased from the lis
     | 2024/12/22    | Transparent background for Windows        | In Development                        |
     | 2025/02/10    | GUI for app configuration and etc.        | In Development                        |
     | 2025/02/10    | Websocket server/client                   | In Query                              |
-    | 2025/02/22    | Countdown timer                           | In Query                              |
+    | 2025/02/22    | Countdown timer                           | Implemented in commit 90d56c5         |
     | 2025/02/22    | Basic PvP matchpoint counter overlay      | In Query                              |
     | 2025/02/22    | Auto-update feature (optional)            | In Query                              |
