@@ -1,4 +1,3 @@
-use crate::{NeedleErr, NeedleError};
 use chrono::{DateTime, Local, Timelike};
 use serde::Deserialize;
 use std::{
@@ -43,13 +42,15 @@ impl Time {
     }
 
     pub fn set_mode(&mut self, mode: OpMode) {
-        self.mode = mode;
+        if self.mode != mode {
+            self.mode = mode;
 
-        match self.mode {
-            OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
-                self.start_time = Instant::now();
+            match self.mode {
+                OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
+                    self.start_time = Instant::now();
+                }
+                _ => (),
             }
-            _ => (),
         }
     }
 
