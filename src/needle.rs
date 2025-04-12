@@ -81,6 +81,17 @@ impl<'a> Needle<'a> {
         Ok(())
     }
 
+    fn start_clock(&mut self) -> NeedleErr<()> {
+        match self.clock_info.as_mut() {
+            Some(clock) => {
+                clock.toggle_timer();
+
+                Ok(())
+            }
+            None => Err(NeedleError::TimerStartFailure),
+        }
+    }
+
     fn create_renderers(&mut self) -> Result<()> {
         if let Some(config) = self.config.as_ref() {
             let app_base = self
@@ -326,6 +337,19 @@ impl<'a> ApplicationHandler for Needle<'a> {
                 ..
             } => {
                 event_loop.exit();
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Space),
+                        ..
+                    },
+                ..
+            } => {
+                if self.start_clock().is_err() {
+                    event_loop.exit();
+                }
             }
             WindowEvent::Resized(physical_size) => {
                 self.resize(&physical_size);
