@@ -35,7 +35,7 @@ impl Time {
     pub fn new(format: TimeFormat) -> Self {
         Self {
             format,
-            mode: OpMode::CountDownTimer(Duration::from_secs_f64(120.0)),
+            mode: OpMode::Clock,
             start_time: Instant::now(),
             stop_time: None,
             started: false,
