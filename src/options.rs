@@ -1,3 +1,6 @@
+// Copyright 2025 Kensuke Saito
+// SPDX-License-Identifier: MIT
+
 use std::{
     env,
     fmt::{self, Display, Formatter},

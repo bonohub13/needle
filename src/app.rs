@@ -1,3 +1,6 @@
+// Copyright 2025 Kensuke Saito
+// SPDX-License-Identifier: MIT
+
 use super::Needle;
 use anyhow::Result;
 use needle_core::NeedleConfig;

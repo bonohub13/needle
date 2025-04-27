@@ -1585,7 +1585,7 @@ dependencies = [
 [[package]]
 name = "needle-core"
 version = "0.1.10"
-source = "git+https://github.com/bonohub13/needle-core#4a34ea44d5394f6da1bfe5191378319e9000a9e4"
+source = "git+https://github.com/bonohub13/needle-core#c18e25adf5b417c7ea85f5dcdc44b7ea74946882"
 dependencies = [
  "anyhow",
  "bytemuck",

@@ -1,4 +1,7 @@
 #![windows_subsystem = "windows"]
+// Copyright 2025 Kensuke Saito
+// SPDX-License-Identifier: MIT
+
 mod app;
 mod needle;
 mod options;
