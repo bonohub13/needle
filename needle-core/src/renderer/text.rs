@@ -92,7 +92,7 @@ impl TextRenderer {
         self.buffer.set_text(
             &mut self.system,
             text,
-            glyphon::Attrs::new().family(glyphon::Family::SansSerif),
+            &glyphon::Attrs::new().family(glyphon::Family::SansSerif),
             glyphon::Shaping::Advanced,
         )
     }

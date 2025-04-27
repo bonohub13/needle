@@ -47,16 +47,20 @@ impl ShaderRenderer {
         let vert_shader_code = Self::read_shader(&vert_shader_path)?;
         let frag_shader_code = Self::read_shader(&frag_shader_path)?;
         let vert_shader = unsafe {
-            device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(&NeedleLabel::Shader("Vertex").to_string()),
-                source: wgpu::util::make_spirv_raw(&vert_shader_code),
-            })
+            device.create_shader_module_passthrough(wgpu::ShaderModuleDescriptorPassthrough::SpirV(
+                wgpu::ShaderModuleDescriptorSpirV {
+                    label: Some(&NeedleLabel::Shader("Vertex").to_string()),
+                    source: wgpu::util::make_spirv_raw(&vert_shader_code),
+                },
+            ))
         };
         let frag_shader = unsafe {
-            device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
-                label: Some(&NeedleLabel::Shader("Fragment").to_string()),
-                source: wgpu::util::make_spirv_raw(&frag_shader_code),
-            })
+            device.create_shader_module_passthrough(wgpu::ShaderModuleDescriptorPassthrough::SpirV(
+                wgpu::ShaderModuleDescriptorSpirV {
+                    label: Some(&NeedleLabel::Shader("Fragment").to_string()),
+                    source: wgpu::util::make_spirv_raw(&frag_shader_code),
+                },
+            ))
         };
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

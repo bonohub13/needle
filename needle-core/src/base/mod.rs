@@ -31,14 +31,11 @@ impl<'a> AppBase<'a> {
             .next()
             .context("Failed to find valid adapter")?;
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
-                    ..Default::default()
-                },
-                None,
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
+                ..Default::default()
+            })
             .await?;
 
         // Config
