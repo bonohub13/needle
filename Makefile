@@ -27,14 +27,10 @@ pkg: clean shader-docker pkg-linux_docker pkg-windows_docker
 	@[ -d ${PKG} ] || mkdir -v ${PKG}
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle ${PKG}
 	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe ${PKG}
-	@sha256sum ${PKG}/needle \
-		| tee ${PKG}/needle.sha256
-	@sha256sum ${PKG}/needle.exe \
-		| tee ${PKG}/needle.exe.sha256
-	@sha256sum shaders/spv/shader.vert.spv \
-		| tee ${PKG}/shaders.vert.spv.sha256
-	@sha256sum shaders/spv/shader.frag.spv \
-		| tee ${PKG}/shaders.frag.spv.sha256
+	@SRC_FILE=${PKG}/needle make generate_hash
+	@SRC_FILE=${PKG}/needle.exe make generate_hash
+	@SRC_FILE=shaders/spv/shader.vert.spv make generate_hash
+	@SRC_FILE=shaders/spv/shader.frag.spv make generate_hash
 
 fmt:
 	@$(CARGO) fmt
@@ -55,5 +51,10 @@ release: fmt shader-docker
 
 run:
 	@$(CARGO) run --release --offline
+
+generate_hash:
+	cat ${SRC_FILE} \
+		| sha512sum \
+		| tee $(shell echo "${SRC_FILE}" | awk -F/ '{printf "${PKG}/%s\n", $$NF}').sha512
 
 .PHONY: clean pkg fmt fetch update build release run
