@@ -1,8 +1,6 @@
 CARGO := cargo
 TAR := tar
 
-NEEDLE_CORE := needle-core
-
 SPIRV_DIR := shaders/spv
 MAKEFILES_DIR := makefiles
 PKG := pkg
@@ -18,7 +16,6 @@ all: build run
 # Rust code
 clean:
 	@$(CARGO) clean
-	@(cd $(NEEDLE_CORE) && $(CARGO) clean)
 	@rm -rvf ${SPIRV_DIR}
 	@rm -rvf ${HOME}/.config/needle/shaders
 	@rm -rvf ${PKG}
@@ -37,11 +34,9 @@ fmt:
 
 fetch:
 	@$(CARGO) fetch --manifest-path=Cargo.toml
-	@$(CARGO) fetch --manifest-path=${NEEDLE_CORE}/Cargo.toml
 
 update:
 	@$(CARGO) update --verbose
-	@cd ${NEEDLE_CORE} && $(CARGO) update --verbose
 
 build: fmt
 	@$(CARGO) build --offline
