@@ -8,7 +8,7 @@ PKG := pkg
 include ${MAKEFILES_DIR}/linux.mk
 include ${MAKEFILES_DIR}/windows.mk
 include ${MAKEFILES_DIR}/shader.mk
-include ${MAKEFILES_DIR}/docker.mk
+include ${MAKEFILES_DIR}/license.mk
 include ${MAKEFILES_DIR}/docs.mk
 
 all: build run
@@ -20,7 +20,7 @@ clean:
 	@rm -rvf ${HOME}/.config/needle/shaders
 	@rm -rvf ${PKG}
 
-pkg: clean shader-docker pkg-linux_docker pkg-windows_docker
+pkg: clean addlicense shader-docker pkg-linux_docker pkg-windows_docker generate-sbom_docker
 	@[ -d ${PKG} ] || mkdir -v ${PKG}
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle ${PKG}
 	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe ${PKG}
