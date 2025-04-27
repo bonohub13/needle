@@ -1,20 +1,16 @@
+# Commands
 CARGO := cargo
 DOCKER := docker
 
+# Variables
 TARGET_LINUX := x86_64-unknown-linux-gnu
 
-RUST_DOCKER_IMAGE_NAME := buildenv
-LINUX_IMAGE_TAG := linux
-
 linux-update:
-	@$(CARGO) update --target=${TARGET_LINUX}
+	$(CARGO) update --target=${TARGET_LINUX}
 
 pkg-linux:
 	$(CARGO) build --release --target=${TARGET_LINUX}
 
 pkg-linux_docker:
-	$(DOCKER) run --rm -it \
-		-v $(shell pwd):/app \
-		-v ${HOME}/.cargo/registry:/usr/local/cargo/registry\
-		${RUST_DOCKER_IMAGE_NAME}:${LINUX_IMAGE_TAG} \
-		bash -c "make pkg-linux"
+	@IMAGE_NAME=${RUST_DOCKER_IMAGE_NAME} TAG=${LINUX_IMAGE_TAG} CMD="make pkg-linux" \
+		make docker-exec
