@@ -45,6 +45,9 @@ fetch:
 update:
 	@$(CARGO) update --verbose
 
+clippy:
+	@$(CARGO) clippy
+
 build: fmt
 	@$(CARGO) build --offline
 
