@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use needle_core::{
-    AppBase, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
+    State, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
     TextRenderer, Texture, Time, Vertex,
 };
 use std::{
@@ -21,7 +21,7 @@ use winit::{
 
 pub struct Needle<'a> {
     window: Option<Arc<Window>>,
-    app_base: Option<AppBase<'a>>,
+    app_base: Option<State<'a>>,
     config: Option<Arc<NeedleConfig>>,
     depth_texture: Option<Texture>,
     background_renderer: Option<ShaderRenderer>,
@@ -100,7 +100,7 @@ impl<'a> Needle<'a> {
             let app_base = self
                 .app_base
                 .as_ref()
-                .expect("needle_core::AppBase for Needle not available");
+                .expect("needle_core::State for Needle not available");
             let window = self.window.as_ref().expect("Window not initialized");
             let window_size = window.inner_size();
             let window_scale_factor = window.scale_factor();
@@ -179,7 +179,7 @@ impl<'a> Needle<'a> {
         let app_base = self
             .app_base
             .as_ref()
-            .expect("needle_core::AppBase not available");
+            .expect("needle_core::State not available");
         let config = self.config.as_ref().expect("NeedleConfig not available");
         let time = self
             .time_renderer
@@ -211,7 +211,7 @@ impl<'a> Needle<'a> {
         let app_base = self
             .app_base
             .as_mut()
-            .expect("needle_core::AppBase not available");
+            .expect("needle_core::State not available");
         let depth_texture = self
             .depth_texture
             .as_ref()
@@ -303,8 +303,8 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     .create_window(window_attr)
                     .expect("Failed to create window."),
             );
-            let app_base = pollster::block_on(AppBase::new(window.clone()))
-                .expect("Failed to create needle_core::AppBase");
+            let app_base = pollster::block_on(State::new(window.clone()))
+                .expect("Failed to create needle_core::State");
             let depth_texture = Texture::create_depth_texture(
                 app_base.device(),
                 app_base.surface_config(),

@@ -37,7 +37,7 @@ fn main() -> Result<()> {
                 return Ok(());
             }
             AppOptions::GenerateConfig(path) => {
-                return NeedleConfig::config(Some(path));
+                return Ok(NeedleConfig::config(Some(path))?);
             }
             AppOptions::Unknown(_) => bail!("{}", opt),
             AppOptions::ConfigFilePath(path) => {

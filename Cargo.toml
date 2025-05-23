@@ -10,7 +10,7 @@ anyhow = "1.0.93"
 chrono = "0.4.39"
 env_logger = "0.11.5"
 log = "0.4.22"
-needle-core = { version = "0.1.10", git = "https://github.com/bonohub13/needle-core", tag="0.1.10" }
+needle-core = { git = "https://github.com/bonohub13/needle-core", tag="0.1.12" }
 pollster = "0.4.0"
 reqwest = { version = "0.12.12", features = ["blocking"] }
 wgpu = "25.0.0"
