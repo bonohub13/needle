@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use needle_core::{
-    State, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
+    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer, State,
     TextRenderer, Texture, Time, Vertex,
 };
 use std::{
@@ -193,7 +193,7 @@ impl<'a> Needle<'a> {
 
         time.set_text(&clock_info.current_time());
         time.update(app_base.queue(), app_base.surface_config());
-        time.prepare(5.0, &app_base.device(), app_base.queue())?;
+        time.prepare(5.0, app_base.device(), app_base.queue())?;
 
         if config.fps.enable {
             fps.set_text(&format!(
@@ -201,7 +201,7 @@ impl<'a> Needle<'a> {
                 config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
             ));
             fps.update(app_base.queue(), app_base.surface_config());
-            fps.prepare(5.0, &app_base.device(), app_base.queue())?;
+            fps.prepare(5.0, app_base.device(), app_base.queue())?;
         }
 
         Ok(())
@@ -277,7 +277,12 @@ impl<'a> Needle<'a> {
                 Err(_) => Err(NeedleError::InvalidPath),
             }?;
         let src_url = format!("{}/{}/{}", release_url_base, Self::VERSION, path);
-        let mut file = match OpenOptions::new().write(true).create(true).open(write_path) {
+        let mut file = match OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(write_path)
+        {
             Ok(file) => Ok(file),
             Err(_) => Err(NeedleError::InvalidPath),
         }?;
@@ -314,9 +319,8 @@ impl<'a> ApplicationHandler for Needle<'a> {
             self.window = Some(window.clone());
             self.app_base = Some(app_base);
             self.depth_texture = Some(depth_texture);
-            match self.create_renderers() {
-                Err(e) => panic!("{}", e),
-                _ => (),
+            if let Err(e) = self.create_renderers() {
+                panic!("{}", e);
             }
         }
     }
@@ -368,13 +372,10 @@ impl<'a> ApplicationHandler for Needle<'a> {
                 {
                     /* Check for window has been done in the if statement above */
                     self.window.as_ref().unwrap().request_redraw();
-                    match self.update() {
-                        Err(e) => {
-                            log::error!("{}", e);
-                            event_loop.exit();
-                        }
-                        _ => (),
-                    };
+                    if let Err(e) = self.update() {
+                        log::error!("{}", e);
+                        event_loop.exit();
+                    }
                     match self.render() {
                         Ok(_) => {
                             self.next_frame += self.fps_limit;
