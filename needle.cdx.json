@@ -2,9 +2,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.3",
   "version": 1,
-  "serialNumber": "urn:uuid:6d10ef5a-b8f4-4fdc-81db-f6065ead78ae",
+  "serialNumber": "urn:uuid:d8200576-ed62-4e04-8f47-48de598347bd",
   "metadata": {
-    "timestamp": "2025-05-23T12:27:26.091908662Z",
+    "timestamp": "2025-05-23T12:34:23.595651304Z",
     "tools": [
       {
         "vendor": "CycloneDX",
@@ -59,7 +59,7 @@
           "expression": "GPL-2.0-only"
         }
       ],
-      "purl": "pkg:cargo/needle-core@0.1.12?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Ftag=0.1.12%401b1d58ea962e6e213ab10afc8b4f5dcb14286e7f"
+      "purl": "pkg:cargo/needle-core@0.1.12?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Ftag=0.1.12%4019f7f6629122fe5223fa7e1811dba47e986962a1"
     },
     {
       "type": "library",
