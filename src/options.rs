@@ -16,13 +16,13 @@ pub enum AppOptions {
     Unknown(String),
 }
 
-impl<'a> AppOptions {
+impl AppOptions {
     #[cfg(windows)]
-    const NEWLINE: &'a str = "\r\n";
+    const NEWLINE: &'static str = "\r\n";
     #[cfg(not(windows))]
-    const NEWLINE: &'a str = "\n";
+    const NEWLINE: &'static str = "\n";
     pub fn new() -> Vec<Self> {
-        let args = env::args().into_iter().collect::<Vec<_>>();
+        let args = env::args().collect::<Vec<_>>();
         let mut skip_counter = 0;
         let mut ret = vec![];
 
@@ -32,9 +32,9 @@ impl<'a> AppOptions {
                 continue;
             }
 
-            Self::parse_str(&arg).iter_mut().for_each(|opt| match opt {
+            Self::parse_str(arg).iter_mut().for_each(|opt| match opt {
                 Self::ConfigFilePath(ref mut path) | Self::GenerateConfig(ref mut path) => {
-                    if path == "" {
+                    if path.is_empty() {
                         *path = if ((i + 2) < args.len()) && (args[i + 2] != "=") {
                             // OPTION FILENAME
                             skip_counter = 1;
