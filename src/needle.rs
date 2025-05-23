@@ -3,8 +3,8 @@
 
 use anyhow::Result;
 use needle_core::{
-    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer, State,
-    TextRenderer, Texture, Time, Vertex,
+    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
+    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Vertex,
 };
 use std::{
     fs::{self, OpenOptions},
@@ -110,37 +110,43 @@ impl<'a> Needle<'a> {
             let background_vertex_buffer =
                 app_base.create_vertex_buffer("Background", &background_vertices);
             let background_index_buffer = app_base.create_index_buffer("Background", &indices);
-            let background_renderer = ShaderRenderer::new(
-                app_base.device(),
-                app_base.surface_config(),
-                NeedleConfig::config_path(false, Some(Self::VERTEX_SHADER_DEFAULT_PATH))
+            let background_renderer = {
+                let desc = ShaderRendererDescriptor {
+                    vert_shader_path: NeedleConfig::config_path(
+                        false,
+                        Some(Self::VERTEX_SHADER_DEFAULT_PATH),
+                    )
                     .expect("Failed to find vertex shader"),
-                NeedleConfig::config_path(false, Some(Self::FRAGMENT_SHADER_DEFAULT_PATH))
+                    frag_shader_path: NeedleConfig::config_path(
+                        false,
+                        Some(Self::FRAGMENT_SHADER_DEFAULT_PATH),
+                    )
                     .expect("Failed to find fragment shader"),
-                vec![background_vertex_buffer],
-                vec![Vertex::buffer_layout()],
-                Some((0, indices)),
-                Some(background_index_buffer),
-                Some(depth_stencil_state.clone()),
-                Some("Background"),
-            )?;
+                    vertex_buffers: &[background_vertex_buffer],
+                    vertex_buffer_layouts: &[Vertex::buffer_layout()],
+                    indices: Some((0, indices)),
+                    index_buffers: Some(background_index_buffer),
+                    depth_stencil: Some(depth_stencil_state.clone()),
+                    label: Some("Background"),
+                };
+
+                ShaderRenderer::new(app_base, &desc)?
+            };
             let time_renderer = TextRenderer::new(
+                app_base,
                 &config.time.config,
                 config.time.font.clone(),
                 &window_size,
                 window_scale_factor,
-                app_base.device(),
-                app_base.queue(),
                 app_base.surface_config().format,
                 Some(depth_stencil_state.clone()),
             )?;
             let fps_renderer = TextRenderer::new(
+                app_base,
                 &config.fps.config,
                 None,
                 &window_size,
                 window_scale_factor,
-                app_base.device(),
-                app_base.queue(),
                 app_base.surface_config().format,
                 Some(depth_stencil_state.clone()),
             )?;
