@@ -29,6 +29,13 @@ pkg: clean addlicense shader-docker pkg-linux_docker pkg-windows_docker generate
 	@SRC_FILE=shaders/spv/shader.vert.spv make generate_hash
 	@SRC_FILE=shaders/spv/shader.frag.spv make generate_hash
 
+install:
+	@[ -d ${HOME}/.cargo/bin ] || ( \
+		mkdir -pv "${HOME}/.cargo/bin" && \
+		echo "Add \"$${HOME}/.cargo/bin\" to path" \
+	)
+	@$(CARGO) install --path .
+
 fmt:
 	@$(CARGO) fmt
 
