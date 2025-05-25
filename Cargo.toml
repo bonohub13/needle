@@ -9,8 +9,11 @@ license = "MIT"
 anyhow = "1.0.93"
 chrono = "0.4.39"
 env_logger = "0.11.5"
+imgui = "0.12.0"
+imgui-wgpu = "0.25.0"
+imgui-winit-support = "0.13.0"
 log = "0.4.22"
-needle-core = { git = "https://github.com/bonohub13/needle-core", tag="0.1.12" }
+needle-core = { git = "https://github.com/bonohub13/needle-core", branch="main" }
 pollster = "0.4.0"
 reqwest = { version = "0.12.12", features = ["blocking"] }
 wgpu = "25.0.0"
