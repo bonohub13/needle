@@ -4,10 +4,10 @@
 use super::Needle;
 use anyhow::Result;
 use needle_core::NeedleConfig;
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 use winit::event_loop::{ControlFlow, EventLoop};
 
-pub fn run(config: Arc<NeedleConfig>) -> Result<()> {
+pub fn run(config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
     let event_loop = EventLoop::new()?;
     let mut app = Needle::default();
 

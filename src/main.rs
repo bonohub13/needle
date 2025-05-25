@@ -12,7 +12,7 @@ use options::*;
 
 use anyhow::{bail, Result};
 use needle_core::NeedleConfig;
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 #[cfg(target_os = "windows")]
 use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
 
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
         }
     }
 
-    let config = Arc::new(NeedleConfig::from(config_path)?);
+    let config = Rc::new(RefCell::new(NeedleConfig::from(config_path)?));
 
     run(config)
 }

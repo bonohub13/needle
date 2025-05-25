@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: MIT
 
 use anyhow::Result;
+use imgui::{Condition, Context, FontConfig, FontSource, MouseCursor};
+use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use needle_core::{
-    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Renderer, ShaderRenderer,
-    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Vertex,
+    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Position, Renderer, ShaderRenderer,
+    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, TimeFormat, Vertex,
 };
 use std::{
+    cell::{RefCell, RefMut},
     fs::{self, OpenOptions},
     io::copy,
+    rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -17,12 +21,32 @@ use winit::{
     event::{ElementState, KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::{KeyCode, PhysicalKey},
-    window::Window,
+    window::{Window, WindowId},
 };
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+enum ImguiMode {
+    Background,
+    ClockTimer,
+    Fps,
+    Invalid,
+}
+
+pub struct ImguiState {
+    context: Context,
+    platform: WinitPlatform,
+    renderer: imgui_wgpu::Renderer,
+    last_cursor: Option<MouseCursor>,
+    last_frame: Instant,
+    show_imgui: bool,
+    settings_mode: ImguiMode,
+}
 
 pub struct NeedleBase<'a> {
     window: Arc<Window>,
     state: State<'a>,
+    imgui_state: ImguiState,
     depth_texture: Texture,
     background_renderer: ShaderRenderer,
     time_renderer: TextRenderer,
@@ -35,13 +59,117 @@ pub struct NeedleBase<'a> {
     fps_update_limit: Duration,
 }
 
+#[derive(Default)]
 pub struct Needle<'window> {
     base: Option<NeedleBase<'window>>,
-    config: Option<Arc<NeedleConfig>>,
+    config: Option<Rc<RefCell<NeedleConfig>>>,
+}
+
+impl From<ImguiMode> for u8 {
+    fn from(mode: ImguiMode) -> Self {
+        match mode {
+            ImguiMode::Background => 0,
+            ImguiMode::ClockTimer => 1,
+            ImguiMode::Fps => 2,
+            ImguiMode::Invalid => u8::MAX,
+        }
+    }
+}
+
+impl From<u8> for ImguiMode {
+    fn from(val: u8) -> Self {
+        match val {
+            0 => ImguiMode::Background,
+            1 => ImguiMode::ClockTimer,
+            2 => ImguiMode::Fps,
+            _ => ImguiMode::Invalid,
+        }
+    }
+}
+
+impl ImguiState {
+    const NEEDLE_IMGUI_WINDOW_TITLE: &'static str = "Needle Settings";
+    const NEEDLE_IMGUI_WINDOW_SIZE: [f32; 2] = [800.0, 600.0];
+
+    fn new(window: Arc<Window>, config: Rc<RefCell<NeedleConfig>>, state: &State) -> Self {
+        let mut context = Self::create_context(window.clone(), config.clone());
+        let platform = Self::create_platform(window.clone(), &mut context);
+        let renderer = Self::create_renderer(&mut context, state);
+
+        Self {
+            context,
+            platform,
+            renderer,
+            last_cursor: None,
+            last_frame: Instant::now(),
+            show_imgui: true,
+            settings_mode: ImguiMode::Background,
+        }
+    }
+
+    fn update(&mut self, new_frame: Instant) {
+        self.context
+            .io_mut()
+            .update_delta_time(new_frame - self.last_frame);
+        self.last_frame = new_frame;
+    }
+
+    fn handle_event(
+        &mut self,
+        window: &Window,
+        window_id: WindowId,
+        event: winit::event::WindowEvent,
+    ) {
+        self.platform.handle_event::<()>(
+            self.context.io_mut(),
+            window,
+            &winit::event::Event::WindowEvent { event, window_id },
+        )
+    }
+
+    fn toggle_imgui(&mut self) {
+        self.show_imgui = !self.show_imgui;
+    }
+
+    fn create_context(window: Arc<Window>, _config: Rc<RefCell<NeedleConfig>>) -> Context {
+        let mut context = Context::create();
+        let hidpi_factor = window.scale_factor();
+        let font_size = (13.0 * hidpi_factor) as f32;
+
+        context.set_ini_filename(None);
+        context.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
+        context.fonts().add_font(&[FontSource::DefaultFontData {
+            config: Some(FontConfig {
+                oversample_h: 1,
+                pixel_snap_h: true,
+                size_pixels: font_size,
+                ..Default::default()
+            }),
+        }]);
+
+        context
+    }
+
+    fn create_platform(window: Arc<Window>, context: &mut Context) -> WinitPlatform {
+        let mut platform = WinitPlatform::new(context);
+
+        platform.attach_window(context.io_mut(), &window, HiDpiMode::Default);
+
+        platform
+    }
+
+    fn create_renderer(context: &mut Context, state: &State) -> imgui_wgpu::Renderer {
+        let config = imgui_wgpu::RendererConfig {
+            texture_format: state.surface_config().format,
+            ..Default::default()
+        };
+
+        imgui_wgpu::Renderer::new(context, state.device(), state.queue(), config)
+    }
 }
 
 impl<'a> NeedleBase<'a> {
-    fn new(event_loop: &ActiveEventLoop, config: Arc<NeedleConfig>) -> Result<Self> {
+    fn new(event_loop: &ActiveEventLoop, config: Rc<RefCell<NeedleConfig>>) -> Result<Self> {
         let window = {
             let attr = Window::default_attributes()
                 .with_title(Needle::APP_NAME)
@@ -52,6 +180,7 @@ impl<'a> NeedleBase<'a> {
             Arc::new(window)
         };
         let state = pollster::block_on(State::new(window.clone()))?;
+        let imgui_state = ImguiState::new(window.clone(), config.clone(), &state);
         let depth_texture = Texture::create_depth_texture(
             state.device(),
             state.surface_config(),
@@ -63,21 +192,18 @@ impl<'a> NeedleBase<'a> {
         Ok(Self {
             window,
             state,
+            imgui_state,
             depth_texture,
             background_renderer: background,
             time_renderer: time,
             fps_renderer: fps,
-            clock_info: Time::new(config.time.format),
+            clock_info: Time::new(config.borrow().time.format),
             current_frame: 0,
             next_frame: Instant::now(),
-            fps_limit: Duration::from_secs_f64(1.0 / config.fps.frame_limit as f64),
+            fps_limit: Duration::from_secs_f64(1.0 / config.borrow().fps.frame_limit as f64),
             fps_update_limit: Duration::from_secs_f64(1.0),
             fps_update: Instant::now(),
         })
-    }
-
-    fn set_mode(&mut self, mode: OpMode) {
-        self.clock_info.set_mode(mode);
     }
 
     fn start_clock(&mut self) -> NeedleErr<()> {
@@ -103,8 +229,17 @@ impl<'a> NeedleBase<'a> {
         }
     }
 
-    fn update(&mut self, config: Arc<NeedleConfig>) -> Result<()> {
+    fn update(&mut self, config: RefMut<NeedleConfig>) -> NeedleErr<()> {
+        let (background_vertices, _) =
+            Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
+        let background_vertex_buffer = self
+            .state
+            .create_vertex_buffer("Background", &background_vertices);
+
+        self.background_renderer
+            .set_vertex_buffer(&[background_vertex_buffer])?;
         self.time_renderer.set_text(&self.clock_info.current_time());
+        self.time_renderer.set_config(&config);
         self.time_renderer
             .update(self.state.queue(), self.state.surface_config());
         self.time_renderer
@@ -115,16 +250,19 @@ impl<'a> NeedleBase<'a> {
                 "{:.3}",
                 config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
             ));
+            self.time_renderer.set_config(&config);
             self.fps_renderer
                 .update(self.state.queue(), self.state.surface_config());
             self.fps_renderer
                 .prepare(5.0, self.state.device(), self.state.queue())?;
+        } else {
+            self.fps_renderer.set_text("");
         }
 
         Ok(())
     }
 
-    fn render(&mut self) -> NeedleErr<()> {
+    fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
         let color = wgpu::Color {
             r: 0.0,
             g: 0.0,
@@ -132,14 +270,11 @@ impl<'a> NeedleBase<'a> {
             a: 0.0,
         };
 
-        self.state.render(|current_texture, encoder| {
-            let view = current_texture
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
+        self.state.render(|encoder| {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&NeedleLabel::RenderPass("").to_string()),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(color),
@@ -166,16 +301,288 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    fn render(&mut self, mut config: RefMut<NeedleConfig>) -> Result<()> {
+        let texture = self.state.get_current_texture()?;
+        let view = texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.imgui_state
+            .platform
+            .prepare_frame(self.imgui_state.context.io_mut(), &self.window)?;
+
+        let ui = self.imgui_state.context.frame();
+
+        if self.imgui_state.show_imgui {
+            let window = ui.window(ImguiState::NEEDLE_IMGUI_WINDOW_TITLE);
+            let mut background_color = config
+                .background_color
+                .iter()
+                .map(|val| (*val * 255.0) as u8)
+                .collect::<Vec<_>>();
+            let mut fps_enable = if config.fps.enable { 1 } else { 0 };
+            let mut mode = self.imgui_state.settings_mode as u8;
+            let mut clock_scale = (config.time.config.scale * 100.0) as u8;
+            let mut countdown_duration = Duration::new(0, 0);
+            let mut clock_mode = match self.clock_info.mode() {
+                OpMode::Clock => 0,
+                OpMode::CountUpTimer => 1,
+                OpMode::CountDownTimer(duration) => {
+                    countdown_duration = duration;
+
+                    2
+                }
+            };
+            let mut view_mode = match config.time.format {
+                TimeFormat::HourMinSec => 0,
+                TimeFormat::HourMinSecMSec => 1,
+            };
+            let mut clock_position = match config.time.config.position {
+                Position::TopLeft => 0,
+                Position::Top => 1,
+                Position::TopRight => 2,
+                Position::Left => 3,
+                Position::Center => 4,
+                Position::Right => 5,
+                Position::BottomLeft => 6,
+                Position::Bottom => 7,
+                Position::BottomRight => 8,
+            };
+            let mut fps_position = match config.fps.config.position {
+                Position::TopLeft => 0,
+                Position::Top => 1,
+                Position::TopRight => 2,
+                Position::Left => 3,
+                Position::Center => 4,
+                Position::Right => 5,
+                Position::BottomLeft => 6,
+                Position::Bottom => 7,
+                Position::BottomRight => 8,
+            };
+            let mut save_result = Ok(());
+
+            window
+                .size(
+                    ImguiState::NEEDLE_IMGUI_WINDOW_SIZE,
+                    Condition::FirstUseEver,
+                )
+                .build(|| {
+                    ui.slider_config(
+                        "Settings",
+                        ImguiMode::Background as u8,
+                        ImguiMode::ClockTimer as u8,
+                    )
+                    .display_format(match self.imgui_state.settings_mode {
+                        ImguiMode::Background => "Background",
+                        ImguiMode::ClockTimer => "Clock/Timer",
+                        ImguiMode::Fps => "FPS",
+                        _ => "",
+                    })
+                    .build(&mut mode);
+                    self.imgui_state.settings_mode = mode.into();
+                    ui.separator();
+                    match self.imgui_state.settings_mode {
+                        ImguiMode::Background => {
+                            ui.text("Color:");
+                            ui.slider("red (background)", 0, 255, &mut background_color[0]);
+                            ui.slider("green (background)", 0, 255, &mut background_color[1]);
+                            ui.slider("blue (background)", 0, 255, &mut background_color[2]);
+                        }
+                        ImguiMode::ClockTimer => {
+                            ui.text("Text Color:");
+                            ui.slider("red (text)", 0, 255, &mut config.time.config.color[0]);
+                            ui.slider("green (text)", 0, 255, &mut config.time.config.color[1]);
+                            ui.slider("blue (text)", 0, 255, &mut config.time.config.color[2]);
+                            if ui.slider("Text Scale", 0, u8::MAX, &mut clock_scale) {
+                                config.time.config.scale = clock_scale as f32 / 100.0;
+                            }
+                            if ui.list_box(
+                                "Clock Position",
+                                &mut clock_position,
+                                &[
+                                    "Top Left",
+                                    "Top",
+                                    "Top Right",
+                                    "Left",
+                                    "Center",
+                                    "Right",
+                                    "Bottom Left",
+                                    "Bottom",
+                                    "Bottom Right",
+                                ],
+                                9,
+                            ) {
+                                config.time.config.position = Position::from(clock_position);
+                            }
+                            ui.text("Mode:");
+                            ui.slider_config("Format Mode", 0, 1)
+                                .display_format(match config.time.format {
+                                    TimeFormat::HourMinSec => "HourMinSec",
+                                    TimeFormat::HourMinSecMSec => "HourMinSecMSec",
+                                })
+                                .build(&mut view_mode);
+                            ui.slider_config("Clock Mode", 0, 2)
+                                .display_format(match self.clock_info.mode() {
+                                    OpMode::Clock => "Clock",
+                                    OpMode::CountUpTimer => "Countup Timer",
+                                    OpMode::CountDownTimer(_) => "Countdown Timer",
+                                })
+                                .build(&mut clock_mode);
+                            if clock_mode != 0 {
+                                ui.text("Press \"SPACE\" to start/stop timer");
+                            }
+                            if clock_mode == 2 {
+                                let mut countdown_sec = 0;
+
+                                if ui
+                                    .input_int("Countdown Duration", &mut countdown_sec)
+                                    .build()
+                                {
+                                    countdown_duration = Duration::new(countdown_sec as u64, 0);
+                                };
+                            }
+                        }
+                        ImguiMode::Fps => {
+                            ui.slider("Toggle FPS visualization", 0, 1, &mut fps_enable);
+                            ui.text("Text Color:");
+                            ui.slider("red (fps):", 0, 255, &mut config.fps.config.color[0]);
+                            ui.slider("green (fps):", 0, 255, &mut config.fps.config.color[1]);
+                            ui.slider("blue (fps):", 0, 255, &mut config.fps.config.color[2]);
+                            if ui.list_box(
+                                "FPS Position",
+                                &mut fps_position,
+                                &[
+                                    "Top Left",
+                                    "Top",
+                                    "Top Right",
+                                    "Left",
+                                    "Center",
+                                    "Right",
+                                    "Bottom Left",
+                                    "Bottom",
+                                    "Bottom Right",
+                                ],
+                                9,
+                            ) {
+                                config.fps.config.position = Position::from(fps_position);
+                            }
+                        }
+                        _ => (),
+                    }
+                    ui.separator();
+                    ui.text("Press \"INSERT\" to toggle menu.");
+                    ui.text("Save config:");
+                    if ui.button("Save") {
+                        save_result = config.save_config();
+                    }
+                    ui.separator();
+                    ui.text("Repository:");
+                    ui.text("https://github.com/bonohub13/needle");
+                    ui.text("License: MIT");
+                });
+
+            config
+                .background_color
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, rgba)| {
+                    *rgba = background_color[i] as f32 / 255.0;
+                });
+            config.fps.enable = fps_enable % 2 == 1;
+            if clock_mode == 0 {
+                self.clock_info.set_mode(OpMode::Clock);
+            } else if clock_mode == 1 {
+                self.clock_info.set_mode(OpMode::CountUpTimer);
+            } else {
+                self.clock_info
+                    .set_mode(OpMode::CountDownTimer(countdown_duration));
+            }
+            let time_format = if view_mode == 0 {
+                TimeFormat::HourMinSec
+            } else {
+                TimeFormat::HourMinSecMSec
+            };
+
+            if time_format != config.time.format {
+                config.time.format = time_format;
+                self.clock_info = Time::new(config.time.format);
+            }
+            save_result?;
+        }
+
+        if self.imgui_state.last_cursor != ui.mouse_cursor() {
+            self.imgui_state.last_cursor = ui.mouse_cursor();
+            self.imgui_state.platform.prepare_render(ui, &self.window);
+        }
+
+        self.update(config)?;
+        if let Err(err) = self.render_needle(&view) {
+            match err {
+                NeedleError::Lost | NeedleError::Outdated => {
+                    let size = self.window.inner_size();
+
+                    self.resize(&size);
+                }
+                NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {
+                    log::error!("{}", NeedleError::OutOfMemory);
+
+                    return Err(err.into());
+                }
+                NeedleError::Timeout => log::warn!("{}", err),
+                NeedleError::Other => log::error!("{}", err),
+                _ => (),
+            }
+        }
+
+        let mut encoder = self
+            .state
+            .device()
+            .create_command_encoder(&Default::default());
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some(&NeedleLabel::ImguiWindow("").to_string()),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        self.imgui_state.renderer.render(
+            self.imgui_state.context.render(),
+            self.state.queue(),
+            self.state.device(),
+            &mut render_pass,
+        )?;
+
+        drop(render_pass);
+
+        self.state.queue().submit(Some(encoder.finish()));
+
+        texture.present();
+
+        Ok(())
+    }
+
     fn create_renderers(
         window: Arc<Window>,
-        config: Arc<NeedleConfig>,
+        config: Rc<RefCell<NeedleConfig>>,
         state: &State,
     ) -> Result<(ShaderRenderer, TextRenderer, TextRenderer)> {
         let window_size = window.inner_size();
         let window_scale_factor = window.scale_factor();
         let depth_stencil_state = Texture::default_depth_stencil();
-        let (background_vertices, indices) =
-            Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
+        let (background_vertices, indices) = Vertex::indexed_rectangle(
+            [1.0, 1.0],
+            [0.0, 0.0],
+            0.1,
+            &config.borrow().background_color,
+        );
         let background_vertex_buffer =
             state.create_vertex_buffer("Background", &background_vertices);
         let background_index_buffer = state.create_index_buffer("Background", &indices);
@@ -201,8 +608,8 @@ impl<'a> NeedleBase<'a> {
         };
         let time_renderer = TextRenderer::new(
             state,
-            &config.time.config,
-            config.time.font.clone(),
+            &config.borrow().time.config,
+            config.borrow().time.font.clone(),
             &window_size,
             window_scale_factor,
             state.surface_config().format,
@@ -210,7 +617,7 @@ impl<'a> NeedleBase<'a> {
         )?;
         let fps_renderer = TextRenderer::new(
             state,
-            &config.fps.config,
+            &config.borrow().fps.config,
             None,
             &window_size,
             window_scale_factor,
@@ -228,7 +635,7 @@ impl Needle<'_> {
     const VERTEX_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.vert.spv";
     const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
 
-    pub fn set_config(&mut self, config: Arc<NeedleConfig>) -> Result<()> {
+    pub fn set_config(&mut self, config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
         let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
         let vert_shader_path =
             NeedleConfig::config_path(false, Some(Self::VERTEX_SHADER_DEFAULT_PATH))?;
@@ -300,10 +707,10 @@ impl<'a> ApplicationHandler for Needle<'a> {
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
+        window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let (Some(base), Some(config)) = (self.base.as_mut(), self.config.as_mut()) {
+        if let (Some(base), Some(config)) = (self.base.as_mut(), self.config.as_ref()) {
             base.current_frame += 1;
             match event {
                 WindowEvent::CloseRequested
@@ -332,58 +739,43 @@ impl<'a> ApplicationHandler for Needle<'a> {
                         event_loop.exit();
                     }
                 }
+                WindowEvent::KeyboardInput {
+                    event:
+                        KeyEvent {
+                            state: ElementState::Pressed,
+                            physical_key: PhysicalKey::Code(KeyCode::Insert),
+                            ..
+                        },
+                    ..
+                } => {
+                    base.imgui_state.toggle_imgui();
+                }
                 WindowEvent::Resized(physical_size) => {
                     base.resize(&physical_size);
                 }
                 WindowEvent::RedrawRequested => {
                     /* Check for window has been done in the if statement above */
                     base.window.request_redraw();
-                    if let Err(e) = base.update(config.clone()) {
-                        log::error!("{}", e);
+                    let frame_time = Instant::now();
+                    base.imgui_state.update(frame_time);
+                    if let Err(err) = base.render(config.borrow_mut()) {
+                        log::error!("{}", err);
+
                         event_loop.exit();
                     }
-                    match base.render() {
-                        Ok(_) => {
-                            base.next_frame += base.fps_limit;
+                    base.next_frame += base.fps_limit;
 
-                            if (base.fps_update - std::time::Instant::now()) > base.fps_update_limit
-                            {
-                                base.fps_update = std::time::Instant::now();
-                                base.current_frame = 0;
-                            }
-                            std::thread::sleep(base.next_frame - std::time::Instant::now());
-                        }
-                        Err(e) => match e {
-                            NeedleError::Lost | NeedleError::Outdated => {
-                                let size = base.window.inner_size();
-
-                                base.resize(&size);
-                            }
-                            NeedleError::OutOfMemory | NeedleError::RemovedFromAtlas => {
-                                log::error!("{}", NeedleError::OutOfMemory);
-                                event_loop.exit();
-                            }
-                            NeedleError::Timeout => {
-                                log::warn!("{}", NeedleError::Timeout);
-                            }
-                            NeedleError::Other => {
-                                log::error!("{}", NeedleError::Other);
-                            }
-                            _ => (),
-                        },
+                    if (base.fps_update - frame_time) > base.fps_update_limit {
+                        base.fps_update = frame_time;
+                        base.current_frame = 0;
                     }
+                    std::thread::sleep(base.next_frame - frame_time);
                 }
                 _ => (),
             }
-        }
-    }
-}
 
-impl Default for Needle<'_> {
-    fn default() -> Self {
-        Self {
-            base: None,
-            config: None,
+            base.imgui_state
+                .handle_event(&base.window, window_id, event);
         }
     }
 }
