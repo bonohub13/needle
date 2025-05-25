@@ -6,8 +6,8 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
-- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.1.4-hotfix/needle.exe)
-- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.1.4-hotfix/needle)
+- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.2.0/needle.exe)
+- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.2.0/needle)
 
 ## Instruction
 - Read the [instructions](./doc/INSTRUCTIONS.md) for examples to use in OBS Studio.
@@ -50,14 +50,8 @@ Features in the TODO List that have been implemented will be erased from the lis
 - Features in queue for development/in active development
     | Date (Added)  | Feature                                   | Status                                |
     |:--------------|:------------------------------------------|:-------------------------------------:|
-    | 2024/11/17    | Optional FPS limit                        | Feature released on Version 0.1.4     |
-    | 2024/12/22    | Background color via shader code (SPIR-V) | Feature released on Version 0.1.4     |
-    | 2024/12/22    | Update winit version to v0.30             | Feature released on Version 0.1.4     |
-    | 2024/12/22    | Documentation for use in OBS Studio       | Feature released on Version 0.1.4     |
-    | 2024/12/22    | Auto download default shaders             | Feature released on Version 0.1.4     |
-    | 2025/01/01    | Custom font selection                     | Feature released on Version 0.1.4     |
     | 2024/12/22    | Transparent background for Windows        | In Development                        |
-    | 2025/02/10    | GUI for app configuration and etc.        | In Development                        |
+    | 2025/02/10    | GUI for app configuration and etc.        | Feature released on Version 0.2.0     |
     | 2025/02/10    | Websocket server/client                   | In Query                              |
     | 2025/02/22    | Countdown timer                           | Implemented in commit 90d56c5         |
     | 2025/02/22    | Basic PvP matchpoint counter overlay      | In Query                              |
