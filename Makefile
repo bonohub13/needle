@@ -24,7 +24,7 @@ clean:
 pkg: clean addlicense shader-docker pkg-linux_docker pkg-windows_docker generate-sbom_docker
 	@[ -d ${PKG} ] || mkdir -v ${PKG}
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle ${PKG}
-	@(cd target/x86_64-pc-windows-gnu/release && $(ZIP) ../../../${PKG}/needle.zip *.exe *.lib) 
+	@$(ZIP) -j ${PKG}/needle.zip target/x86_64-pc-windows-gnu/release/*.exe target/x86_64-pc-windows-gnu/release/*.dll
 	@cp -v shaders/spv/shader.*.spv ${PKG}
 	@SRC_FILE=${PKG}/needle make generate_hash
 	@SRC_FILE=${PKG}/needle.zip make generate_hash
