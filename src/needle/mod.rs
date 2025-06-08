@@ -1,12 +1,15 @@
 // Copyright 2025 Kensuke Saito
 // SPDX-License-Identifier: MIT
 
+mod mode;
+
 use anyhow::Result;
 use imgui::{Condition, Context, FontConfig, FontSource, MouseCursor};
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
+use mode::ImguiMode;
 use needle_core::{
     NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Position, Renderer, ShaderRenderer,
-    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, TimeFormat, Vertex,
+    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Vertex,
 };
 use std::{
     cell::{RefCell, RefMut},
@@ -23,15 +26,6 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
-
-#[repr(u8)]
-#[derive(Clone, Copy)]
-enum ImguiMode {
-    Background,
-    ClockTimer,
-    Fps,
-    Invalid,
-}
 
 pub struct ImguiState {
     context: Context,
@@ -63,28 +57,6 @@ pub struct NeedleBase<'a> {
 pub struct Needle<'window> {
     base: Option<NeedleBase<'window>>,
     config: Option<Rc<RefCell<NeedleConfig>>>,
-}
-
-impl From<ImguiMode> for u8 {
-    fn from(mode: ImguiMode) -> Self {
-        match mode {
-            ImguiMode::Background => 0,
-            ImguiMode::ClockTimer => 1,
-            ImguiMode::Fps => 2,
-            ImguiMode::Invalid => u8::MAX,
-        }
-    }
-}
-
-impl From<u8> for ImguiMode {
-    fn from(val: u8) -> Self {
-        match val {
-            0 => ImguiMode::Background,
-            1 => ImguiMode::ClockTimer,
-            2 => ImguiMode::Fps,
-            _ => ImguiMode::Invalid,
-        }
-    }
 }
 
 impl ImguiState {
@@ -239,7 +211,7 @@ impl<'a> NeedleBase<'a> {
         self.background_renderer
             .set_vertex_buffer(&[background_vertex_buffer])?;
         self.time_renderer.set_text(&self.clock_info.current_time());
-        self.time_renderer.set_config(&config);
+        self.time_renderer.set_config(&config.time.config);
         self.time_renderer
             .update(self.state.queue(), self.state.surface_config());
         self.time_renderer
@@ -250,14 +222,14 @@ impl<'a> NeedleBase<'a> {
                 "{:.3}",
                 config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
             ));
-            self.time_renderer.set_config(&config);
-            self.fps_renderer
-                .update(self.state.queue(), self.state.surface_config());
-            self.fps_renderer
-                .prepare(5.0, self.state.device(), self.state.queue())?;
         } else {
             self.fps_renderer.set_text("");
         }
+        self.fps_renderer.set_config(&config.fps.config);
+        self.fps_renderer
+            .update(self.state.queue(), self.state.surface_config());
+        self.fps_renderer
+            .prepare(5.0, self.state.device(), self.state.queue())?;
 
         Ok(())
     }
@@ -315,50 +287,7 @@ impl<'a> NeedleBase<'a> {
 
         if self.imgui_state.show_imgui {
             let window = ui.window(ImguiState::NEEDLE_IMGUI_WINDOW_TITLE);
-            let mut background_color = config
-                .background_color
-                .iter()
-                .map(|val| (*val * 255.0) as u8)
-                .collect::<Vec<_>>();
-            let mut fps_enable = if config.fps.enable { 1 } else { 0 };
-            let mut mode = self.imgui_state.settings_mode as u8;
-            let mut clock_scale = (config.time.config.scale * 100.0) as u8;
-            let mut countdown_duration = Duration::new(0, 0);
-            let mut clock_mode = match self.clock_info.mode() {
-                OpMode::Clock => 0,
-                OpMode::CountUpTimer => 1,
-                OpMode::CountDownTimer(duration) => {
-                    countdown_duration = duration;
-
-                    2
-                }
-            };
-            let mut view_mode = match config.time.format {
-                TimeFormat::HourMinSec => 0,
-                TimeFormat::HourMinSecMSec => 1,
-            };
-            let mut clock_position = match config.time.config.position {
-                Position::TopLeft => 0,
-                Position::Top => 1,
-                Position::TopRight => 2,
-                Position::Left => 3,
-                Position::Center => 4,
-                Position::Right => 5,
-                Position::BottomLeft => 6,
-                Position::Bottom => 7,
-                Position::BottomRight => 8,
-            };
-            let mut fps_position = match config.fps.config.position {
-                Position::TopLeft => 0,
-                Position::Top => 1,
-                Position::TopRight => 2,
-                Position::Left => 3,
-                Position::Center => 4,
-                Position::Right => 5,
-                Position::BottomLeft => 6,
-                Position::Bottom => 7,
-                Position::BottomRight => 8,
-            };
+            let mut mode: u8 = self.imgui_state.settings_mode.into();
             let mut save_result = Ok(());
 
             window
@@ -369,8 +298,8 @@ impl<'a> NeedleBase<'a> {
                 .build(|| {
                     ui.slider_config(
                         "Settings",
-                        ImguiMode::Background as u8,
-                        ImguiMode::ClockTimer as u8,
+                        ImguiMode::Background.into(),
+                        ImguiMode::Fps.into(),
                     )
                     .display_format(match self.imgui_state.settings_mode {
                         ImguiMode::Background => "Background",
@@ -383,18 +312,53 @@ impl<'a> NeedleBase<'a> {
                     ui.separator();
                     match self.imgui_state.settings_mode {
                         ImguiMode::Background => {
+                            let mut background_color = config
+                                .background_color
+                                .iter()
+                                .map(|val| (*val * 255.0) as u8)
+                                .collect::<Vec<_>>();
+                            let mut update_flg = 0;
+
                             ui.text("Color:");
-                            ui.slider("red (background)", 0, 255, &mut background_color[0]);
-                            ui.slider("green (background)", 0, 255, &mut background_color[1]);
-                            ui.slider("blue (background)", 0, 255, &mut background_color[2]);
+                            if ui.slider("red (background)", 0, 255, &mut background_color[0]) {
+                                update_flg += 1
+                            };
+                            if ui.slider("green (background)", 0, 255, &mut background_color[1]) {
+                                update_flg += 1
+                            };
+                            if ui.slider("blue (background)", 0, 255, &mut background_color[2]) {
+                                update_flg += 1
+                            };
+
+                            if update_flg > 0 {
+                                config.background_color[0] = background_color[0] as f32 / 255.0;
+                                config.background_color[1] = background_color[1] as f32 / 255.0;
+                                config.background_color[2] = background_color[2] as f32 / 255.0;
+                                config.background_color[3] = background_color[3] as f32 / 255.0;
+                            }
                         }
                         ImguiMode::ClockTimer => {
+                            let mut clock_scale = (config.time.config.scale * 100.0) as u8;
+                            let mut clock_position = config.time.config.position.into();
+                            let mut view_mode: u8 = config.time.format.into();
+                            let mut clock_mode: u8 = self.clock_info.mode().into();
+                            let mut countdown_duration =
+                                if let OpMode::CountDownTimer(duration) = self.clock_info.mode() {
+                                    duration
+                                } else {
+                                    Duration::new(0, 0)
+                                };
+
                             ui.text("Text Color:");
                             ui.slider("red (text)", 0, 255, &mut config.time.config.color[0]);
                             ui.slider("green (text)", 0, 255, &mut config.time.config.color[1]);
                             ui.slider("blue (text)", 0, 255, &mut config.time.config.color[2]);
                             if ui.slider("Text Scale", 0, u8::MAX, &mut clock_scale) {
-                                config.time.config.scale = clock_scale as f32 / 100.0;
+                                config.time.config.scale = if clock_scale > 0 {
+                                    clock_scale as f32 / 50.0
+                                } else {
+                                    1.0 / 50.0
+                                };
                             }
                             if ui.list_box(
                                 "Clock Position",
@@ -412,38 +376,67 @@ impl<'a> NeedleBase<'a> {
                                 ],
                                 9,
                             ) {
-                                config.time.config.position = Position::from(clock_position);
+                                let position = Position::from(clock_position);
+
+                                if config.fps.config.position != position {
+                                    config.time.config.position = position;
+                                }
                             }
                             ui.text("Mode:");
-                            ui.slider_config("Format Mode", 0, 1)
-                                .display_format(match config.time.format {
-                                    TimeFormat::HourMinSec => "HourMinSec",
-                                    TimeFormat::HourMinSecMSec => "HourMinSecMSec",
-                                })
-                                .build(&mut view_mode);
-                            ui.slider_config("Clock Mode", 0, 2)
-                                .display_format(match self.clock_info.mode() {
-                                    OpMode::Clock => "Clock",
-                                    OpMode::CountUpTimer => "Countup Timer",
-                                    OpMode::CountDownTimer(_) => "Countdown Timer",
-                                })
-                                .build(&mut clock_mode);
-                            if clock_mode != 0 {
-                                ui.text("Press \"SPACE\" to start/stop timer");
+                            if ui
+                                .slider_config("Format Mode", 0, 1)
+                                .display_format(format!("{}", config.time.format))
+                                .build(&mut view_mode)
+                            {
+                                config.time.format = view_mode.into();
+                                self.clock_info.set_format(config.time.format);
                             }
-                            if clock_mode == 2 {
-                                let mut countdown_sec = 0;
+                            if ui
+                                .slider_config("Clock Mode", 0, 2)
+                                .display_format(format!("{}", self.clock_info.mode()))
+                                .build(&mut clock_mode)
+                            {
+                                match clock_mode.into() {
+                                    OpMode::Clock => {
+                                        self.clock_info.set_mode(OpMode::Clock);
+                                    }
+                                    OpMode::CountUpTimer => {
+                                        self.clock_info.set_mode(OpMode::CountUpTimer);
+                                        ui.text("Press \"SPACE\" to start/stop timer");
+                                    }
+                                    OpMode::CountDownTimer(_) => {
+                                        self.clock_info
+                                            .set_mode(OpMode::CountDownTimer(countdown_duration));
+                                    }
+                                }
+                            }
+                            match self.clock_info.mode() {
+                                OpMode::CountDownTimer(_) => {
+                                    let mut countdown_sec = 0;
 
-                                if ui
-                                    .input_int("Countdown Duration", &mut countdown_sec)
-                                    .build()
-                                {
-                                    countdown_duration = Duration::new(countdown_sec as u64, 0);
-                                };
+                                    ui.text("Press \"SPACE\" to start/stop timer");
+                                    if ui
+                                        .input_int("Countdown Duration", &mut countdown_sec)
+                                        .build()
+                                    {
+                                        countdown_duration = Duration::new(countdown_sec as u64, 0)
+                                    }
+                                    self.clock_info
+                                        .set_mode(OpMode::CountDownTimer(countdown_duration));
+                                }
+                                OpMode::CountUpTimer => {
+                                    ui.text("Press \"SPACE\" to start/stop timer");
+                                }
+                                _ => (),
                             }
                         }
                         ImguiMode::Fps => {
-                            ui.slider("Toggle FPS visualization", 0, 1, &mut fps_enable);
+                            let mut fps_enable = if config.fps.enable { 1 } else { 0 };
+                            let mut fps_position: i32 = config.fps.config.position.into();
+
+                            if ui.slider("Toggle FPS visualization", 0, 1, &mut fps_enable) {
+                                config.fps.enable = fps_enable % 2 == 1;
+                            }
                             ui.text("Text Color:");
                             ui.slider("red (fps):", 0, 255, &mut config.fps.config.color[0]);
                             ui.slider("green (fps):", 0, 255, &mut config.fps.config.color[1]);
@@ -451,20 +444,19 @@ impl<'a> NeedleBase<'a> {
                             if ui.list_box(
                                 "FPS Position",
                                 &mut fps_position,
-                                &[
-                                    "Top Left",
-                                    "Top",
-                                    "Top Right",
-                                    "Left",
-                                    "Center",
-                                    "Right",
-                                    "Bottom Left",
-                                    "Bottom",
-                                    "Bottom Right",
-                                ],
-                                9,
+                                &["Top Left", "Top Right", "Bottom Left", "Bottom Right"],
+                                4,
                             ) {
-                                config.fps.config.position = Position::from(fps_position);
+                                let position = match fps_position {
+                                    0 => Position::TopLeft,
+                                    1 => Position::TopRight,
+                                    2 => Position::BottomLeft,
+                                    _ => Position::BottomRight,
+                                };
+
+                                if config.time.config.position != position {
+                                    config.fps.config.position = position;
+                                }
                             }
                         }
                         _ => (),
@@ -481,32 +473,6 @@ impl<'a> NeedleBase<'a> {
                     ui.text("License: MIT");
                 });
 
-            config
-                .background_color
-                .iter_mut()
-                .enumerate()
-                .for_each(|(i, rgba)| {
-                    *rgba = background_color[i] as f32 / 255.0;
-                });
-            config.fps.enable = fps_enable % 2 == 1;
-            if clock_mode == 0 {
-                self.clock_info.set_mode(OpMode::Clock);
-            } else if clock_mode == 1 {
-                self.clock_info.set_mode(OpMode::CountUpTimer);
-            } else {
-                self.clock_info
-                    .set_mode(OpMode::CountDownTimer(countdown_duration));
-            }
-            let time_format = if view_mode == 0 {
-                TimeFormat::HourMinSec
-            } else {
-                TimeFormat::HourMinSecMSec
-            };
-
-            if time_format != config.time.format {
-                config.time.format = time_format;
-                self.clock_info = Time::new(config.time.format);
-            }
             save_result?;
         }
 
@@ -634,6 +600,7 @@ impl Needle<'_> {
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     const VERTEX_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.vert.spv";
     const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
+    const RELEASE_URL: &'static str = "https://github.com/bonohub13/needle/releases/download";
 
     pub fn set_config(&mut self, config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
         let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
@@ -666,13 +633,12 @@ impl Needle<'_> {
     }
 
     fn write(path: &str) -> Result<()> {
-        let release_url_base = "https://github.com/bonohub13/needle/releases/download";
         let write_path =
             match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{}", path))) {
                 Ok(p) => Ok(p),
                 Err(_) => Err(NeedleError::InvalidPath),
             }?;
-        let src_url = format!("{}/{}/{}", release_url_base, Self::VERSION, path);
+        let src_url = format!("{}/{}/{}", Self::RELEASE_URL, Self::VERSION, path);
         let mut file = match OpenOptions::new()
             .write(true)
             .create(true)
