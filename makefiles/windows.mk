@@ -8,6 +8,8 @@ windows-update:
 
 pkg-windows:
 	$(CARGO) build --release --target=${TARGET_WINDOWS}
+	[ -f "./target/${TARGET_WINDOWS}/release/*.dll" ] \
+		|| cp -rvf /usr/lib/gcc/x86_64-w64-mingw32/*-win32/*.dll ./target/${TARGET_WINDOWS}/release
 
 pkg-windows_docker:
 	@IMAGE_NAME=${RUST_DOCKER_IMAGE_NAME} TAG=${WINDOWS_IMAGE_TAG} CMD="make pkg-windows" \

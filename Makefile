@@ -1,5 +1,6 @@
 CARGO := cargo
 TAR := tar
+ZIP := zip
 
 SPIRV_DIR := shaders/spv
 MAKEFILES_DIR := makefiles
@@ -23,11 +24,12 @@ clean:
 pkg: clean addlicense shader-docker pkg-linux_docker pkg-windows_docker generate-sbom_docker
 	@[ -d ${PKG} ] || mkdir -v ${PKG}
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle ${PKG}
-	@cp -v target/x86_64-pc-windows-gnu/release/needle.exe ${PKG}
+	@(cd target/x86_64-pc-windows-gnu/release && $(ZIP) ../../../${PKG}/needle.zip *.exe *.lib) 
+	@cp -v shaders/spv/shader.*.spv ${PKG}
 	@SRC_FILE=${PKG}/needle make generate_hash
-	@SRC_FILE=${PKG}/needle.exe make generate_hash
-	@SRC_FILE=shaders/spv/shader.vert.spv make generate_hash
-	@SRC_FILE=shaders/spv/shader.frag.spv make generate_hash
+	@SRC_FILE=${PKG}/needle.zip make generate_hash
+	@SRC_FILE=${PKG}/shader.vert.spv make generate_hash
+	@SRC_FILE=${PKG}/shader.frag.spv make generate_hash
 
 install:
 	@[ -d ${HOME}/.cargo/bin ] || ( \

@@ -1,4 +1,5 @@
 GLSLC := glslc
+NAGA := naga
 DOCKER := docker
 
 SHADER_DIR := shaders
@@ -12,8 +13,8 @@ shader-docker:
 		make docker-exec
 
 shader: prepare
-	$(GLSLC) -o ${SPIRV_DIR}/${VERTEX_SHADER_PATH}.spv ${SHADER_DIR}/${VERTEX_SHADER_PATH}
-	$(GLSLC) -o ${SPIRV_DIR}/${FRAGMENT_SHADER_PATH}.spv ${SHADER_DIR}/${FRAGMENT_SHADER_PATH}
+	$(NAGA) --shader-stage vert ${SHADER_DIR}/vs_main.wgsl ${SPIRV_DIR}/shader.vert.spv
+	$(NAGA) --shader-stage frag ${SHADER_DIR}/fs_main.wgsl ${SPIRV_DIR}/shader.frag.spv
 
 prepare:
 	if [ ! -d ${SPIRV_DIR} ]; then mkdir -pv ${SPIRV_DIR}; fi
