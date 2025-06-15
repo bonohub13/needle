@@ -56,3 +56,4 @@ Features in the TODO List that have been implemented will be erased from the lis
     | 2025/02/22    | Countdown timer                           | Implemented in commit 90d56c5         |
     | 2025/02/22    | Basic PvP matchpoint counter overlay      | In Query                              |
     | 2025/02/22    | Auto-update feature (optional)            | In Query                              |
+    | 2025/06/15    | Font selection                            | In Query                              |
