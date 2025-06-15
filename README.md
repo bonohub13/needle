@@ -6,8 +6,8 @@ Uses [wgpu](https://wgpu.rs/) for rendering, [glyphon](https://github.com/groves
 
 ## Installation
 Go to [releases](https://github.com/bonohub13/needle/releases/latest) and download the executable.
-- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.2.0/needle.exe)
-- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.2.0/needle)
+- Windows: [needle.exe](https://github.com/bonohub13/needle/releases/download/0.2.1/needle.zip)
+- Linux: [needle](https://github.com/bonohub13/needle/releases/download/0.2.1/needle)
 
 ## Instruction
 - Read the [instructions](./doc/INSTRUCTIONS.md) for examples to use in OBS Studio.
