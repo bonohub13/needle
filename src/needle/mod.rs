@@ -8,8 +8,8 @@ use imgui::{Condition, Context, FontConfig, FontSource, MouseCursor};
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use mode::ImguiMode;
 use needle_core::{
-    NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Position, Renderer, ShaderRenderer,
-    ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Vertex,
+    FontTypes, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Position, Renderer,
+    ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Vertex,
 };
 use std::{
     cell::{RefCell, RefMut},
@@ -348,7 +348,33 @@ impl<'a> NeedleBase<'a> {
                                 } else {
                                     Duration::new(0, 0)
                                 };
+                            let font_names = self
+                                .time_renderer
+                                .fonts_mut()
+                                .font_names()
+                                .unwrap_or([].into());
+                            let font_names = font_names
+                                .iter()
+                                .map(|font| font.as_str())
+                                .collect::<Vec<_>>();
+                            let mut clock_font = font_names
+                                .iter()
+                                .enumerate()
+                                .find(|(_, font)| {
+                                    font.to_string()
+                                        == config.time.font.clone().unwrap_or("".to_string())
+                                })
+                                .map(|(idx, _)| idx as i32)
+                                .unwrap_or(0);
 
+                            if ui.list_box("Font:", &mut clock_font, font_names.as_ref(), 5) {
+                                let font = &font_names[clock_font as usize];
+
+                                config.time.font = Some(font.to_string());
+                                if let Err(e) = self.time_renderer.set_font(font) {
+                                    log::error!("{}", e);
+                                }
+                            }
                             ui.text("Text Color:");
                             ui.slider("red (text)", 0, 255, &mut config.time.config.color[0]);
                             ui.slider("green (text)", 0, 255, &mut config.time.config.color[1]);
@@ -572,10 +598,10 @@ impl<'a> NeedleBase<'a> {
 
             ShaderRenderer::new(state, &desc)?
         };
-        let time_renderer = TextRenderer::new(
+        let mut time_renderer = TextRenderer::new(
             state,
             &config.borrow().time.config,
-            config.borrow().time.font.clone(),
+            None,
             &window_size,
             window_scale_factor,
             state.surface_config().format,
@@ -590,6 +616,10 @@ impl<'a> NeedleBase<'a> {
             state.surface_config().format,
             Some(depth_stencil_state.clone()),
         )?;
+
+        time_renderer
+            .fonts_mut()
+            .query_fonts(Some(FontTypes::Monospace))?;
 
         Ok((background_renderer, time_renderer, fps_renderer))
     }
