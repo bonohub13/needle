@@ -348,6 +348,7 @@ impl<'a> NeedleBase<'a> {
                                 } else {
                                     Duration::new(0, 0)
                                 };
+                            let available_fonts = self.time_renderer.fonts_mut().available_fonts();
                             let font_names = self
                                 .time_renderer
                                 .fonts_mut()
@@ -368,10 +369,11 @@ impl<'a> NeedleBase<'a> {
                                 .unwrap_or(0);
 
                             if ui.list_box("Font:", &mut clock_font, font_names.as_ref(), 5) {
-                                let font = &font_names[clock_font as usize];
+                                let font = &available_fonts[clock_font as usize];
 
-                                config.time.font = Some(font.to_string());
-                                if let Err(e) = self.time_renderer.set_font(font) {
+                                config.time.font = Some(font.font.to_string());
+                                if let Err(e) = self.time_renderer.set_font(&font.font) {
+                                    log::error!("{:?}", font);
                                     log::error!("{}", e);
                                 }
                             }

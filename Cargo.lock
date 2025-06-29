@@ -1700,7 +1700,7 @@ dependencies = [
 [[package]]
 name = "needle-core"
 version = "0.1.15"
-source = "git+https://github.com/bonohub13/needle-core?branch=feature%2Ffonts#098897a65df13b2e2315300e89cf29a1714a7b7f"
+source = "git+https://github.com/bonohub13/needle-core?branch=feature%2Ffonts#3291f9dddb044d534c30bbe0e25e9a954f3f7482"
 dependencies = [
  "bytemuck",
  "chrono",
