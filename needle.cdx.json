@@ -2,9 +2,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.3",
   "version": 1,
-  "serialNumber": "urn:uuid:7f9940e7-bc48-4476-a427-273f3a9d675c",
+  "serialNumber": "urn:uuid:a68edd08-d1fc-47c7-af42-43aedf7b9d10",
   "metadata": {
-    "timestamp": "2025-07-06T14:49:20.724219157Z",
+    "timestamp": "2025-07-06T16:35:16.965475556Z",
     "tools": [
       {
         "vendor": "CycloneDX",
@@ -50,7 +50,7 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "git+https://github.com/bonohub13/needle-core?tag=0.2.1#0.2.1",
+      "bom-ref": "git+https://github.com/bonohub13/needle-core?tag=0.2.1-hotfix#0.2.1",
       "name": "needle-core",
       "version": "0.2.1",
       "scope": "required",
@@ -59,7 +59,7 @@
           "expression": "GPL-2.0-only"
         }
       ],
-      "purl": "pkg:cargo/needle-core@0.2.1?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Ftag=0.2.1%409d95ac5cd6da3e97c0a2611de0022fb1b2763f6a"
+      "purl": "pkg:cargo/needle-core@0.2.1?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Ftag=0.2.1-hotfix%407243e5274853ef9e887f4545005b49923acb83c3"
     },
     {
       "type": "library",
@@ -8494,7 +8494,7 @@
   ],
   "dependencies": [
     {
-      "ref": "git+https://github.com/bonohub13/needle-core?tag=0.2.1#0.2.1",
+      "ref": "git+https://github.com/bonohub13/needle-core?tag=0.2.1-hotfix#0.2.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#bytemuck@1.23.1",
         "registry+https://github.com/rust-lang/crates.io-index#chrono@0.4.41",
@@ -8522,7 +8522,7 @@
         "registry+https://github.com/rust-lang/crates.io-index#imgui-wgpu@0.25.0",
         "registry+https://github.com/rust-lang/crates.io-index#imgui-winit-support@0.13.0",
         "registry+https://github.com/rust-lang/crates.io-index#log@0.4.27",
-        "git+https://github.com/bonohub13/needle-core?tag=0.2.1#0.2.1",
+        "git+https://github.com/bonohub13/needle-core?tag=0.2.1-hotfix#0.2.1",
         "registry+https://github.com/rust-lang/crates.io-index#pollster@0.4.0",
         "registry+https://github.com/rust-lang/crates.io-index#reqwest@0.12.22",
         "registry+https://github.com/rust-lang/crates.io-index#wgpu@25.0.2",
