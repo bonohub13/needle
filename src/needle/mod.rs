@@ -205,8 +205,8 @@ impl<'a> NeedleBase<'a> {
 
                     return Err(err.into());
                 }
-                NeedleError::Timeout => log::warn!("{}", err),
-                NeedleError::Other => log::error!("{}", err),
+                NeedleError::Timeout => log::warn!("{err}"),
+                NeedleError::Other => log::error!("{err}"),
                 _ => (),
             }
         }
@@ -321,7 +321,7 @@ impl Needle<'_> {
 
     fn write(path: &str) -> Result<()> {
         let write_path =
-            match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{}", path))) {
+            match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{path}"))) {
                 Ok(p) => Ok(p),
                 Err(_) => Err(NeedleError::InvalidPath),
             }?;
@@ -338,7 +338,7 @@ impl Needle<'_> {
         let resp = reqwest::blocking::get(&src_url)?;
         let content = resp.bytes()?;
 
-        log::debug!("URL : {}", src_url);
+        log::debug!("URL : {src_url}");
         copy(&mut content.as_ref(), &mut file)?;
 
         Ok(())
@@ -388,7 +388,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     ..
                 } => {
                     if let Err(e) = base.start_clock() {
-                        log::error!("{}", e);
+                        log::error!("{e}");
                         event_loop.exit();
                     }
                 }
@@ -412,7 +412,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     let frame_time = Instant::now();
                     base.imgui_state.update(frame_time);
                     if let Err(err) = base.render(config.borrow_mut()) {
-                        log::error!("{}", err);
+                        log::error!("{err}");
 
                         event_loop.exit();
                     }

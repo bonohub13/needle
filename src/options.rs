@@ -117,7 +117,7 @@ impl Display for AppOptions {
                 let app_version = env!("CARGO_PKG_VERSION");
                 let core_info = needle_core::version_info();
 
-                format!("{} {} ({})", app_name, app_version, core_info)
+                format!("{app_name} {app_version} ({core_info})")
             }
             Self::Help => {
                 let lines = [
@@ -152,6 +152,6 @@ impl Display for AppOptions {
             }
         };
 
-        write!(f, "{}", msg)
+        write!(f, "{msg}")
     }
 }

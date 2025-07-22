@@ -131,8 +131,8 @@ impl ImguiState {
 
                                 config.time.font = Some(font.font.to_string());
                                 if let Err(e) = time_renderer.set_font(&font.font) {
-                                    log::error!("{:?}", font);
-                                    log::error!("{}", e);
+                                    log::error!("{font:?}");
+                                    log::error!("{e}");
                                 }
                             }
                             ui.separator();

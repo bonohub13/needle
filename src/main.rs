@@ -32,7 +32,7 @@ fn main() -> Result<()> {
     for opt in app_option.iter() {
         match opt {
             AppOptions::Help | AppOptions::Version => {
-                println!("{}", opt);
+                println!("{opt}");
 
                 return Ok(());
             }
