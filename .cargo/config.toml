@@ -1,7 +1,5 @@
 [target.'cfg(windows)']
-linker = "x86_64-w64-mingw32-g++"
 rustflags = [
     "-C", "link-arg=-static-libstdc++",
     "-C", "link-arg=-static",
-    "-C", "linker=x86_64-w64-mingw32-g++"
 ]
