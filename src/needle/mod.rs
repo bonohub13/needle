@@ -433,6 +433,7 @@ impl<'a> NeedleBase<'a> {
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.update_imgui(config)?;
         self.update(config)?;
+        self.window.pre_present_notify();
         if let Err(err) = self.render_needle(&view) {
             match err {
                 NeedleError::Lost | NeedleError::Outdated => {
