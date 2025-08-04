@@ -87,16 +87,6 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
-    fn start_clock(&mut self) -> NeedleErr<()> {
-        match self.clock_info.mode() {
-            OpMode::Clock => Err(NeedleError::TimerStartFailure),
-            OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
-                self.clock_info.toggle_timer();
-                Ok(())
-            }
-        }
-    }
-
     fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
             self.state.resize(size);
@@ -180,15 +170,15 @@ impl<'a> NeedleBase<'a> {
                                 .collect::<Vec<_>>();
 
                             ui.text("Color:");
-                            if ui.slider("red (background)", 0, 255, &mut background_color[0]) {
-                                config.background_color[0] = background_color[0] as f32 / 255.0;
-                            };
-                            if ui.slider("green (background)", 0, 255, &mut background_color[1]) {
-                                config.background_color[1] = background_color[1] as f32 / 255.0;
-                            };
-                            if ui.slider("blue (background)", 0, 255, &mut background_color[2]) {
-                                config.background_color[2] = background_color[2] as f32 / 255.0;
-                            };
+                            background_color
+                                .iter_mut()
+                                .zip(Self::background_color_tag())
+                                .enumerate()
+                                .for_each(|(i, (color, tag))| {
+                                    if ui.slider(tag, 0, 255, color) {
+                                        config.background_color[i] = *color as f32 / 255.0;
+                                    }
+                                });
                         }
                         ImguiMode::ClockTimer => {
                             // --- Font selection ---
@@ -388,13 +378,6 @@ impl<'a> NeedleBase<'a> {
     }
 
     fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
-        let color = wgpu::Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 0.0,
-        };
-
         self.state.render(|encoder| {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&NeedleLabel::RenderPass("").to_string()),
@@ -402,7 +385,7 @@ impl<'a> NeedleBase<'a> {
                     view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(color),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -520,6 +503,25 @@ impl<'a> NeedleBase<'a> {
             .query_fonts(Some(FontTypes::Monospace))?;
 
         Ok((background_renderer, time_renderer, fps_renderer))
+    }
+
+    fn start_clock(&mut self) -> NeedleErr<()> {
+        match self.clock_info.mode() {
+            OpMode::Clock => Err(NeedleError::TimerStartFailure),
+            OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
+                self.clock_info.toggle_timer();
+                Ok(())
+            }
+        }
+    }
+
+    const fn background_color_tag<'tag>() -> [&'tag str; 4] {
+        [
+            "red (background)",
+            "green (background)",
+            "blue (background)",
+            "alpha (background)",
+        ]
     }
 }
 
