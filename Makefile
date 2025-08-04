@@ -21,13 +21,18 @@ clean:
 	@rm -rvf ${HOME}/.config/needle/shaders
 	@rm -rvf ${PKG}
 
-pkg: clean addlicense shader-docker pkg-linux_docker pkg-windows_docker generate-sbom_docker
+pkg: clean
+	@make addlicense
+	@make shader-docker
+	@make pkg-linux_docker
+	@make pkg-windows_docker
+	@make generate-sbom_docker
 	@[ -d ${PKG} ] || mkdir -v ${PKG}
 	@cp -v target/x86_64-unknown-linux-gnu/release/needle ${PKG}
-	@$(ZIP) -j ${PKG}/needle.zip target/x86_64-pc-windows-gnu/release/*.exe target/x86_64-pc-windows-gnu/release/*.dll
+	@cp -v target/x86_64-pc-windows-msvc/release/needle.exe ${PKG}
 	@cp -v shaders/spv/shader.*.spv ${PKG}
 	@SRC_FILE=${PKG}/needle make generate_hash
-	@SRC_FILE=${PKG}/needle.zip make generate_hash
+	@SRC_FILE=${PKG}/needle.exe make generate_hash
 	@SRC_FILE=${PKG}/shader.vert.spv make generate_hash
 	@SRC_FILE=${PKG}/shader.frag.spv make generate_hash
 
