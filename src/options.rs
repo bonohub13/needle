@@ -48,7 +48,7 @@ impl AppState {
     pub fn new(args: &NeedleArgs) -> Vec<Self> {
         let mut app_states = Vec::with_capacity(Self::MAX_ARGUMENTS);
 
-        if args.help {
+        if args.help || (args.print && !args.gen_config.is_empty()) {
             app_states.push(Self::Help);
         }
 
