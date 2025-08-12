@@ -56,6 +56,7 @@ impl AppState {
             app_states.push(Self::Version);
         }
 
+        // Print and GenerateConfig is exclusive
         if args.print ^ !args.gen_config.is_empty() {
             app_states.push(Self::GenerateConfig(if args.print {
                 "stdout".to_string()

@@ -78,6 +78,7 @@ impl<'a> NeedleBase<'a> {
     const FPS_POSITION: &'static str = "FPS Position";
     const FPS_POSITION_COUNT: usize = 4;
 
+    /// Create new instance of new Needle primary application logic
     fn new(event_loop: &ActiveEventLoop, config: Rc<RefCell<NeedleConfig>>) -> Result<Self> {
         let window = {
             let attr = Window::default_attributes()
@@ -115,6 +116,8 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    /// Start count down/count up timer.
+    /// If clock mode is set to clock, this fails.
     fn start_clock(&mut self) -> NeedleErr<()> {
         match self.clock_info.mode() {
             OpMode::Clock => Err(NeedleError::TimerStartFailure),
@@ -125,6 +128,7 @@ impl<'a> NeedleBase<'a> {
         }
     }
 
+    /// Resize render surface to new window size
     fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
             self.state.resize(size);
@@ -138,6 +142,7 @@ impl<'a> NeedleBase<'a> {
         }
     }
 
+    /// Update render content for new frame
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
         let (background_vertices, _) =
             Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
@@ -177,6 +182,7 @@ impl<'a> NeedleBase<'a> {
         Ok(())
     }
 
+    /// Update Imgui UI for needle
     fn update_imgui(&mut self, config: &mut NeedleConfig) -> NeedleErr<()> {
         self.imgui_state.setup(&self.window, |ui, settings_mode| {
             let window = ui.window(Self::NEEDLE_IMGUI_WINDOW_TITLE);
@@ -416,6 +422,7 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    /// Render single frame for needle
     fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
         let color = wgpu::Color::TRANSPARENT;
 
@@ -450,6 +457,7 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    /// Render single frame of all objects in needle
     fn render(&mut self, config: &mut NeedleConfig) -> Result<()> {
         let texture = self.state.get_current_texture()?;
         let view = texture
@@ -638,6 +646,7 @@ impl Needle<'_> {
         Ok(())
     }
 
+    /// Download shader from Github
     fn download_shader() -> Result<()> {
         let vert_shader = "shader.vert.spv";
         let frag_shader = "shader.frag.spv";
@@ -648,6 +657,7 @@ impl Needle<'_> {
         Ok(())
     }
 
+    /// Download specified shader
     fn write(path: &str) -> Result<()> {
         let write_path =
             match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{path}"))) {
