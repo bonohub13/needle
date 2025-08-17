@@ -48,7 +48,7 @@ fn main() -> Result<()> {
         }
     }
 
-    let config = Rc::new(RefCell::new(NeedleConfig::from(config_path)?));
+    let config = Rc::new(RefCell::new(NeedleConfig::read(config_path)?));
 
     run(config)
 }

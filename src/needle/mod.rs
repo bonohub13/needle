@@ -47,9 +47,41 @@ pub struct Needle<'window> {
 }
 
 impl<'a> NeedleBase<'a> {
+    const TEXT_RENDERER_MARGIN: f32 = 5.0;
     const NEEDLE_IMGUI_WINDOW_TITLE: &'static str = "Needle Settings";
     const NEEDLE_IMGUI_WINDOW_SIZE: [f32; 2] = [800.0, 600.0];
+    // Imgui Tags
+    const NEEDLE_IMGUI_SETTINGS: &'static str = "Settings";
+    const NEEDLE_IMGUI_SAVE: &'static str = "Save";
+    const NEEDLE_IMGUI_SAVE_COUNT: usize = 2;
+    const NEEDLE_IMGUI_DESCRIPTION_COUNT: usize = 4;
+    //  - Background
+    const BACKGROUND_COLOR: &'static str = "Color:";
+    #[cfg(target_os = "windows")]
+    const BACKGROUND_COLOR_COUNT: usize = 3;
+    #[cfg(target_os = "linux")]
+    const BACKGROUND_COLOR_COUNT: usize = 4;
+    //  - Clock Timer
+    const CLOCK_TIMER_FONT: &'static str = "Font";
+    const CLOCK_TIMER_FONT_ROWS: usize = 5;
+    const CLOCK_TIMER_FONT_COLOR: &'static str = "Font Color:";
+    const CLOCK_TIMER_FONT_COLOR_COUNT: usize = 3;
+    const CLOCK_TIMER_FONT_SCALE: &'static str = "Font Scale";
+    const CLOCK_TIMER_POSITION: &'static str = "Clock Position";
+    const CLOCK_TIMER_POSITION_COUNT: usize = 9;
+    const CLOCK_TIMER_MODE: &'static str = "Mode:";
+    const CLOCK_TIMER_FORMAT_MODE: &'static str = "Format Mode";
+    const CLOCK_TIMER_CLOCK_MODE: &'static str = "Clock Mode";
+    const CLOCK_TIMER_CLOCK_MODE_INFO: &'static str = "Press \"SPACE\" to start/stop timer";
+    const CLOCK_TIMER_CLOCK_MODE_DURATION: &'static str = "Countdown Duration";
+    //  - FPS
+    const FPS_VISUALIZATION: &'static str = "Toggle FPS visualization";
+    const FPS_FONT_COLOR: &'static str = "Font Color:";
+    const FPS_FONT_COLOR_COUNT: usize = 3;
+    const FPS_POSITION: &'static str = "FPS Position";
+    const FPS_POSITION_COUNT: usize = 4;
 
+    /// Create new instance of new Needle primary application logic
     fn new(event_loop: &ActiveEventLoop, config: Rc<RefCell<NeedleConfig>>) -> Result<Self> {
         let window = {
             let attr = Window::default_attributes()
@@ -87,6 +119,19 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    /// Start count down/count up timer.
+    /// If clock mode is set to clock, this fails.
+    fn start_clock(&mut self) -> NeedleErr<()> {
+        match self.clock_info.mode() {
+            OpMode::Clock => Err(NeedleError::TimerStartFailure),
+            OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
+                self.clock_info.toggle_timer();
+                Ok(())
+            }
+        }
+    }
+
+    /// Resize render surface to new window size
     fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
             self.state.resize(size);
@@ -100,6 +145,7 @@ impl<'a> NeedleBase<'a> {
         }
     }
 
+    /// Update render content for new frame
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
         let (background_vertices, _) =
             Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
@@ -113,8 +159,11 @@ impl<'a> NeedleBase<'a> {
         self.time_renderer.set_config(&config.time.config);
         self.time_renderer
             .update(self.state.queue(), self.state.surface_config());
-        self.time_renderer
-            .prepare(5.0, self.state.device(), self.state.queue())?;
+        self.time_renderer.prepare(
+            Self::TEXT_RENDERER_MARGIN,
+            self.state.device(),
+            self.state.queue(),
+        )?;
 
         if config.fps.enable {
             self.fps_renderer.set_text(&format!(
@@ -127,12 +176,16 @@ impl<'a> NeedleBase<'a> {
         self.fps_renderer.set_config(&config.fps.config);
         self.fps_renderer
             .update(self.state.queue(), self.state.surface_config());
-        self.fps_renderer
-            .prepare(5.0, self.state.device(), self.state.queue())?;
+        self.fps_renderer.prepare(
+            Self::TEXT_RENDERER_MARGIN,
+            self.state.device(),
+            self.state.queue(),
+        )?;
 
         Ok(())
     }
 
+    /// Update Imgui UI for needle
     fn update_imgui(&mut self, config: &mut NeedleConfig) -> NeedleErr<()> {
         self.imgui_state.setup(&self.window, |ui, settings_mode| {
             let window = ui.window(Self::NEEDLE_IMGUI_WINDOW_TITLE);
@@ -145,16 +198,11 @@ impl<'a> NeedleBase<'a> {
                     // --- Mode Selection ---
                     if ui
                         .slider_config(
-                            "Settings",
+                            Self::NEEDLE_IMGUI_SETTINGS,
                             ImguiMode::Background.into(),
                             ImguiMode::Fps.into(),
                         )
-                        .display_format(match settings_mode {
-                            ImguiMode::Background => "Background",
-                            ImguiMode::ClockTimer => "Clock/Timer",
-                            ImguiMode::Fps => "FPS",
-                            _ => "",
-                        })
+                        .display_format(format!("{settings_mode}"))
                         .build(&mut mode)
                     {
                         *settings_mode = mode.into();
@@ -169,21 +217,20 @@ impl<'a> NeedleBase<'a> {
                                 .map(|val| (*val * 255.0) as u8)
                                 .collect::<Vec<_>>();
 
-                            ui.text("Color:");
-                            background_color
-                                .iter_mut()
-                                .zip(Self::background_color_tag())
+                            ui.text(Self::BACKGROUND_COLOR);
+                            Self::background_color()
+                                .iter()
                                 .enumerate()
-                                .for_each(|(i, (color, tag))| {
-                                    if ui.slider(tag, 0, 255, color) {
-                                        config.background_color[i] = *color as f32 / 255.0;
-                                    }
+                                .for_each(|(i, tag)| {
+                                    if ui.slider(tag, 0, 255, &mut background_color[i]) {
+                                        config.background_color[i] =
+                                            background_color[i] as f32 / 255.0;
+                                    };
                                 });
                         }
                         ImguiMode::ClockTimer => {
                             // --- Font selection ---
                             let fonts = self.time_renderer.fonts_mut();
-                            let available_fonts = fonts.available_fonts();
                             let font_names = fonts.font_names().unwrap_or([].into());
                             let font_names = font_names
                                 .iter()
@@ -193,14 +240,18 @@ impl<'a> NeedleBase<'a> {
                                 .iter()
                                 .enumerate()
                                 .find(|(_, font)| {
-                                    font.to_string()
-                                        == config.time.font.clone().unwrap_or("".to_string())
+                                    **font == config.time.font.clone().unwrap_or("".to_string())
                                 })
                                 .map(|(idx, _)| idx as i32)
                                 .unwrap_or(0);
 
-                            if ui.list_box("Font:", &mut clock_font, font_names.as_ref(), 5) {
-                                let font = &available_fonts[clock_font as usize];
+                            if ui.list_box(
+                                Self::CLOCK_TIMER_FONT,
+                                &mut clock_font,
+                                font_names.as_ref(),
+                                Self::CLOCK_TIMER_FONT_ROWS as i32,
+                            ) {
+                                let font = &fonts.available_fonts()[clock_font as usize];
 
                                 config.time.font = Some(font.font.to_string());
                                 if let Err(e) = self.time_renderer.set_font(&font.font) {
@@ -211,19 +262,19 @@ impl<'a> NeedleBase<'a> {
                             ui.separator();
 
                             // --- Font color ---
-                            ui.text("Text Color:");
-                            ui.slider("red (text)", 0, 255, &mut config.time.config.color[0]);
-                            ui.slider("green (text)", 0, 255, &mut config.time.config.color[1]);
-                            ui.slider("blue (text)", 0, 255, &mut config.time.config.color[2]);
+                            ui.text(Self::CLOCK_TIMER_FONT_COLOR);
+                            Self::clock_font_color()
+                                .iter()
+                                .enumerate()
+                                .for_each(|(i, tag)| {
+                                    ui.slider(tag, 0, 255, &mut config.time.config.color[i]);
+                                });
 
                             // --- Font scale ---
                             let mut clock_scale = (config.time.config.scale * 100.0) as u8;
-                            if ui.slider("Text Scale", 0, u8::MAX, &mut clock_scale) {
-                                config.time.config.scale = if clock_scale > 0 {
-                                    clock_scale as f32 / 50.0
-                                } else {
-                                    1.0 / 50.0
-                                };
+                            if ui.slider(Self::CLOCK_TIMER_FONT_SCALE, 1, u8::MAX, &mut clock_scale)
+                            {
+                                config.time.config.scale = clock_scale as f32 / 50.0;
                             }
                             ui.separator();
 
@@ -231,20 +282,10 @@ impl<'a> NeedleBase<'a> {
                             let mut clock_position = config.time.config.position.into();
 
                             if ui.list_box(
-                                "Clock Position",
+                                Self::CLOCK_TIMER_POSITION,
                                 &mut clock_position,
-                                &[
-                                    "Top Left",
-                                    "Top",
-                                    "Top Right",
-                                    "Left",
-                                    "Center",
-                                    "Right",
-                                    "Bottom Left",
-                                    "Bottom",
-                                    "Bottom Right",
-                                ],
-                                9,
+                                &Self::clock_position(),
+                                Self::CLOCK_TIMER_POSITION_COUNT as i32,
                             ) {
                                 let position = Position::from(clock_position);
 
@@ -256,9 +297,9 @@ impl<'a> NeedleBase<'a> {
                             // --- Format Mode ---
                             let mut view_mode: u8 = config.time.format.into();
 
-                            ui.text("Mode:");
+                            ui.text(Self::CLOCK_TIMER_MODE);
                             if ui
-                                .slider_config("Format Mode", 0, 1)
+                                .slider_config(Self::CLOCK_TIMER_FORMAT_MODE, 0, 1)
                                 .display_format(format!("{}", config.time.format))
                                 .build(&mut view_mode)
                             {
@@ -277,7 +318,7 @@ impl<'a> NeedleBase<'a> {
                                 };
 
                             if ui
-                                .slider_config("Clock Mode", 0, 2)
+                                .slider_config(Self::CLOCK_TIMER_CLOCK_MODE, 0, 2)
                                 .display_format(format!("{}", self.clock_info.mode()))
                                 .build(&mut clock_mode)
                             {
@@ -287,7 +328,7 @@ impl<'a> NeedleBase<'a> {
                                     }
                                     OpMode::CountUpTimer => {
                                         self.clock_info.set_mode(OpMode::CountUpTimer);
-                                        ui.text("Press \"SPACE\" to start/stop timer");
+                                        ui.text(Self::CLOCK_TIMER_CLOCK_MODE_INFO);
                                     }
                                     OpMode::CountDownTimer(_) => {
                                         self.clock_info
@@ -300,9 +341,12 @@ impl<'a> NeedleBase<'a> {
                                 OpMode::CountDownTimer(_) => {
                                     let mut countdown_sec = 0;
 
-                                    ui.text("Press \"SPACE\" to start/stop timer");
+                                    ui.text(Self::CLOCK_TIMER_CLOCK_MODE_INFO);
                                     if ui
-                                        .input_int("Countdown Duration", &mut countdown_sec)
+                                        .input_int(
+                                            Self::CLOCK_TIMER_CLOCK_MODE_DURATION,
+                                            &mut countdown_sec,
+                                        )
                                         .build()
                                     {
                                         countdown_duration = Duration::new(countdown_sec as u64, 0)
@@ -311,7 +355,7 @@ impl<'a> NeedleBase<'a> {
                                         .set_mode(OpMode::CountDownTimer(countdown_duration));
                                 }
                                 OpMode::CountUpTimer => {
-                                    ui.text("Press \"SPACE\" to start/stop timer");
+                                    ui.text(Self::CLOCK_TIMER_CLOCK_MODE_INFO);
                                 }
                                 _ => (),
                             }
@@ -320,26 +364,33 @@ impl<'a> NeedleBase<'a> {
                             // --- Enable/Disable FPS visualization ---
                             let mut fps_enable = if config.fps.enable { 1 } else { 0 };
 
-                            if ui.slider("Toggle FPS visualization", 0, 1, &mut fps_enable) {
+                            if ui
+                                .slider_config(Self::FPS_VISUALIZATION, 0, 1)
+                                .display_format(Self::fps_enable(config.fps.enable))
+                                .build(&mut fps_enable)
+                            {
                                 config.fps.enable = fps_enable % 2 == 1;
                             }
                             ui.separator();
 
-                            // FPS text color
-                            ui.text("Text Color:");
-                            ui.slider("red (fps):", 0, 255, &mut config.fps.config.color[0]);
-                            ui.slider("green (fps):", 0, 255, &mut config.fps.config.color[1]);
-                            ui.slider("blue (fps):", 0, 255, &mut config.fps.config.color[2]);
+                            // FPS font color
+                            ui.text(Self::FPS_FONT_COLOR);
+                            Self::fps_font_color()
+                                .iter()
+                                .enumerate()
+                                .for_each(|(i, tag)| {
+                                    ui.slider(tag, 0, u8::MAX, &mut config.fps.config.color[i]);
+                                });
                             ui.separator();
 
                             // --- FPS text position ---
                             let mut fps_position: i32 = config.fps.config.position.into();
 
                             if ui.list_box(
-                                "FPS Position",
+                                Self::FPS_POSITION,
                                 &mut fps_position,
-                                &["Top Left", "Top Right", "Bottom Left", "Bottom Right"],
-                                4,
+                                &Self::fps_position(),
+                                Self::FPS_POSITION_COUNT as i32,
                             ) {
                                 let position = match fps_position {
                                     0 => Position::TopLeft,
@@ -358,25 +409,23 @@ impl<'a> NeedleBase<'a> {
 
                     // Save current settings
                     ui.separator();
-                    ui.text("Press \"INSERT\" to toggle menu.");
-                    ui.text("Save config:");
-                    if ui.button("Save") {
+                    Self::save().iter().for_each(|tag| {
+                        ui.text(tag);
+                    });
+                    if ui.button(Self::NEEDLE_IMGUI_SAVE) {
                         save_result = config.save_config();
                     }
 
                     // Description
-                    //  - Repository
-                    //  - License
                     ui.separator();
-                    ui.text("Repository:");
-                    ui.text("https://github.com/bonohub13/needle");
-                    ui.text("License: MIT");
+                    Self::description().iter().for_each(|tag| ui.text(tag));
                 });
 
             save_result
         })
     }
 
+    /// Render single frame for needle
     fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
         self.state.render(|encoder| {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -409,6 +458,7 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
+    /// Render single frame of all objects in needle
     fn render(&mut self, config: &mut NeedleConfig) -> Result<()> {
         let texture = self.state.get_current_texture()?;
         let view = texture
@@ -440,6 +490,72 @@ impl<'a> NeedleBase<'a> {
         texture.present();
 
         Ok(())
+    }
+
+    #[inline]
+    const fn background_color<'color>() -> [&'color str; NeedleBase::BACKGROUND_COLOR_COUNT] {
+        [
+            "red (background)",
+            "green (background)",
+            "blue (background)",
+            #[cfg(target_os = "linux")]
+            "alpha (background)",
+        ]
+    }
+
+    #[inline]
+    const fn clock_font_color<'color>() -> [&'color str; NeedleBase::CLOCK_TIMER_FONT_COLOR_COUNT] {
+        ["red (text)", "green (text)", "blue (text)"]
+    }
+
+    #[inline]
+    const fn clock_position<'position>() -> [&'position str; NeedleBase::CLOCK_TIMER_POSITION_COUNT]
+    {
+        [
+            "Top Left",
+            "Top",
+            "Top Right",
+            "Left",
+            "Center",
+            "Right",
+            "Bottom Left",
+            "Bottom",
+            "Bottom Right",
+        ]
+    }
+
+    #[inline]
+    const fn fps_enable<'enable>(enable: bool) -> &'enable str {
+        if enable {
+            "Enable"
+        } else {
+            "Disable"
+        }
+    }
+
+    #[inline]
+    const fn fps_font_color<'color>() -> [&'color str; NeedleBase::FPS_FONT_COLOR_COUNT] {
+        ["red (fps)", "green (fps)", "blue (fps)"]
+    }
+
+    #[inline]
+    const fn fps_position<'position>() -> [&'position str; NeedleBase::FPS_POSITION_COUNT] {
+        ["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
+    }
+
+    #[inline]
+    const fn save<'save>() -> [&'save str; NeedleBase::NEEDLE_IMGUI_SAVE_COUNT] {
+        ["Press \"INSERT\" to toggle menu.", "Save config:"]
+    }
+
+    #[inline]
+    const fn description<'desc>() -> [&'desc str; NeedleBase::NEEDLE_IMGUI_DESCRIPTION_COUNT] {
+        [
+            "Repository:",
+            "  - https://github.com/bonohub13/needle",
+            "License:",
+            "  - MIT",
+        ]
     }
 
     fn create_renderers(
@@ -504,25 +620,6 @@ impl<'a> NeedleBase<'a> {
 
         Ok((background_renderer, time_renderer, fps_renderer))
     }
-
-    fn start_clock(&mut self) -> NeedleErr<()> {
-        match self.clock_info.mode() {
-            OpMode::Clock => Err(NeedleError::TimerStartFailure),
-            OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
-                self.clock_info.toggle_timer();
-                Ok(())
-            }
-        }
-    }
-
-    const fn background_color_tag<'tag>() -> [&'tag str; 4] {
-        [
-            "red (background)",
-            "green (background)",
-            "blue (background)",
-            "alpha (background)",
-        ]
-    }
 }
 
 impl Needle<'_> {
@@ -552,6 +649,7 @@ impl Needle<'_> {
         Ok(())
     }
 
+    /// Download shader from Github
     fn download_shader() -> Result<()> {
         let vert_shader = "shader.vert.spv";
         let frag_shader = "shader.frag.spv";
@@ -562,6 +660,7 @@ impl Needle<'_> {
         Ok(())
     }
 
+    /// Download specified shader
     fn write(path: &str) -> Result<()> {
         let write_path =
             match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{path}"))) {

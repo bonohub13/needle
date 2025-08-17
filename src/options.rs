@@ -7,7 +7,7 @@ use std::{
 };
 
 #[derive(Debug, Default, clap::Parser)]
-#[command(version, about, long_about = None)]
+#[command(about, long_about = None, disable_help_flag = true, disable_version_flag = true)]
 pub struct NeedleArgs {
     /// Display help message
     #[arg(long, short)]
@@ -48,7 +48,7 @@ impl AppState {
     pub fn new(args: &NeedleArgs) -> Vec<Self> {
         let mut app_states = Vec::with_capacity(Self::MAX_ARGUMENTS);
 
-        if args.help {
+        if args.help || (args.print && !args.gen_config.is_empty()) {
             app_states.push(Self::Help);
         }
 
@@ -56,6 +56,7 @@ impl AppState {
             app_states.push(Self::Version);
         }
 
+        // Print and GenerateConfig is exclusive
         if args.print ^ !args.gen_config.is_empty() {
             app_states.push(Self::GenerateConfig(if args.print {
                 "stdout".to_string()
