@@ -51,9 +51,14 @@ fetch:
 
 update:
 	@$(CARGO) update --verbose
+	@make fetch
 
 clippy:
 	@$(CARGO) clippy
+
+clippy-docker:
+	@make linux-clippy_docker
+	@make windows-clippy_docker
 
 build: fmt
 	@$(CARGO) build --offline
