@@ -7,7 +7,7 @@ windows-update:
 	$(CARGO) update --target=${TARGET_WINDOWS}
 
 windows-clippy:
-	$(CARGO) clippy --target=${TARGET_WINDOWS}
+	$(CARGO) xwin clippy --target=${TARGET_WINDOWS} --release
 
 pkg-windows:
 	$(CARGO) xwin build --release --target=${TARGET_WINDOWS}
