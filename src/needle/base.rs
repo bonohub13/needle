@@ -6,7 +6,7 @@ use imgui::Condition;
 use needle_core::{
     Buffer, FontTypes, ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, NeedleLabel,
     OpMode, Position, Renderer, ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer,
-    Texture, Time, Vertex,
+    Texture, Time, TimeFormat, Vertex,
 };
 use std::{
     cell::RefCell,
@@ -226,7 +226,7 @@ impl<'a> NeedleBase<'a> {
 
         self.imgui_state.setup(&self.window, |ui, settings_mode| {
             let window = ui.window(NEEDLE_IMGUI_WINDOW_TITLE);
-            let mut mode: u8 = u8::from(*settings_mode);
+            let mut mode: i8 = i8::from(*settings_mode);
             let mut save_result: NeedleErr<()> = Ok(());
 
             window
@@ -234,11 +234,7 @@ impl<'a> NeedleBase<'a> {
                 .build(|| {
                     // --- Mode Selection ---
                     if ui
-                        .slider_config(
-                            NEEDLE_IMGUI_SETTINGS,
-                            ImguiMode::Background.into(),
-                            ImguiMode::Fps.into(),
-                        )
+                        .slider_config(NEEDLE_IMGUI_SETTINGS, ImguiMode::BACKGROUND, ImguiMode::MAX)
                         .display_format(format!("{settings_mode}"))
                         .build(&mut mode)
                     {
@@ -331,11 +327,15 @@ impl<'a> NeedleBase<'a> {
                             }
                             ui.separator();
                             // --- Format Mode ---
-                            let mut view_mode: u8 = config.time.format.into();
+                            let mut view_mode: i8 = config.time.format.into();
 
                             ui.text(CLOCK_TIMER_MODE);
                             if ui
-                                .slider_config(CLOCK_TIMER_FORMAT_MODE, 0, 1)
+                                .slider_config(
+                                    CLOCK_TIMER_FORMAT_MODE,
+                                    TimeFormat::HOUR_MIN_SEC,
+                                    TimeFormat::MAX,
+                                )
                                 .display_format(format!("{}", config.time.format))
                                 .build(&mut view_mode)
                             {
@@ -345,7 +345,7 @@ impl<'a> NeedleBase<'a> {
                             ui.separator();
 
                             // --- Clock Mode ---
-                            let mut clock_mode: u8 = self.clock_info.mode().into();
+                            let mut clock_mode: i8 = self.clock_info.mode().into();
                             let mut countdown_duration =
                                 if let OpMode::CountDownTimer(duration) = self.clock_info.mode() {
                                     duration
@@ -354,7 +354,7 @@ impl<'a> NeedleBase<'a> {
                                 };
 
                             if ui
-                                .slider_config(CLOCK_TIMER_CLOCK_MODE, 0, 2)
+                                .slider_config(CLOCK_TIMER_CLOCK_MODE, OpMode::CLOCK, OpMode::MAX)
                                 .display_format(format!("{}", self.clock_info.mode()))
                                 .build(&mut clock_mode)
                             {
@@ -428,11 +428,18 @@ impl<'a> NeedleBase<'a> {
                                 &Self::fps_position(),
                                 Self::FPS_POSITION_COUNT as i32,
                             ) {
+                                const OFFSET: i32 = Position::TOP_LEFT as i32;
+                                const TOP_LEFT: i32 = Position::TOP_LEFT as i32 - OFFSET;
+                                const TOP_RIGHT: i32 = Position::TOP_RIGHT as i32 - OFFSET;
+                                const BOTTOM_LEFT: i32 = Position::BOTTOM_LEFT as i32 - OFFSET;
+                                const BOTTOM_RIGHT: i32 = Position::BOTTOM_RIGHT as i32 - OFFSET;
+
                                 let position = match fps_position {
-                                    0 => Position::TopLeft,
-                                    1 => Position::TopRight,
-                                    2 => Position::BottomLeft,
-                                    _ => Position::BottomRight,
+                                    TOP_LEFT => Position::TopLeft,
+                                    TOP_RIGHT => Position::TopRight,
+                                    BOTTOM_LEFT => Position::BottomLeft,
+                                    BOTTOM_RIGHT => Position::BottomRight,
+                                    _ => config.fps.config.position,
                                 };
 
                                 if config.time.config.position != position {
@@ -440,7 +447,6 @@ impl<'a> NeedleBase<'a> {
                                 }
                             }
                         }
-                        _ => (),
                     }
 
                     // Save current settings
@@ -514,14 +520,14 @@ impl<'a> NeedleBase<'a> {
     const fn clock_position<'position>() -> [&'position str; NeedleBase::CLOCK_TIMER_POSITION_COUNT]
     {
         [
-            "Top Left",
-            "Top",
-            "Top Right",
-            "Left",
             "Center",
-            "Right",
-            "Bottom Left",
+            "Top",
             "Bottom",
+            "Left",
+            "Right",
+            "Top Left",
+            "Top Right",
+            "Bottom Left",
             "Bottom Right",
         ]
     }
