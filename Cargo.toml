@@ -11,6 +11,7 @@ chrono = "0.4"
 clap = { version = "4.5.42", features = ["derive"] }
 env_logger = "0.11"
 font-loader = "0.11"
+glm = "0.3.0"
 imgui = { version = "0.12", features = [] }
 log = "0.4"
 needle-core = { git = "https://github.com/bonohub13/needle-core", branch="rework/renderer" }

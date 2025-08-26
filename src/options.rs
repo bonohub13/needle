@@ -7,7 +7,7 @@ use std::{
 };
 
 #[derive(Debug, Default, clap::Parser)]
-#[command(version, about, long_about = None)]
+#[command(about, long_about = None, disable_help_flag = true, disable_version_flag = true)]
 pub struct NeedleArgs {
     /// Display help message
     #[arg(long, short)]

@@ -4,9 +4,9 @@
 use anyhow::Result;
 use imgui::Condition;
 use needle_core::{
-    Buffer, FontTypes, ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, NeedleLabel,
-    OpMode, Position, Renderer, ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer,
-    Texture, Time, TimeFormat, Vertex,
+    BindGroupLayout, Buffer, FontTypes, ImguiMode, ImguiState, NeedleConfig, NeedleErr,
+    NeedleError, NeedleLabel, OpMode, Position, Renderer, ShaderRenderer, ShaderRendererDescriptor,
+    State, TextRenderer, Texture, Time, TimeFormat, Ubo, Vertex,
 };
 use std::{
     cell::RefCell,
@@ -123,6 +123,7 @@ impl<'a> NeedleBase<'a> {
 
     /// Render single frame of all objects in needle
     pub fn render(&mut self, config: &mut NeedleConfig) -> Result<()> {
+        self.state.device().poll(wgpu::PollType::Wait)?;
         let texture = self.state.get_current_texture()?;
         let view = texture
             .texture
@@ -149,7 +150,7 @@ impl<'a> NeedleBase<'a> {
         }
 
         self.imgui_state.render(&self.state, &view)?;
-
+        self.state.device().poll(wgpu::PollType::Wait)?;
         texture.present();
 
         Ok(())
@@ -159,26 +160,20 @@ impl<'a> NeedleBase<'a> {
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
         const TEXT_RENDERER_MARGIN: f32 = 5.0;
 
-        let (background_vertices, indices) =
-            Vertex::indexed_rectangle([1.0, 1.0], [0.0, 0.0], 0.1, &config.background_color);
-        let background_buffer = Buffer::new(
-            &self.state,
-            NeedleLabel::Buffer("Background"),
-            &background_vertices,
-            0,
-            Some(&indices),
+        let background = glm::vec4(
+            config.background_color[0],
+            config.background_color[1],
+            config.background_color[2],
+            config.background_color[3],
         );
 
-        self.background_renderer.set_buffer(background_buffer)?;
+        self.background_renderer
+            .write_buffer(&background, self.state.queue())?;
         self.time_renderer.set_text(&self.clock_info.current_time());
         self.time_renderer.set_config(&config.time.config);
+        self.time_renderer.update(&self.state);
         self.time_renderer
-            .update(self.state.queue(), self.state.surface_config());
-        self.time_renderer.prepare(
-            TEXT_RENDERER_MARGIN,
-            self.state.device(),
-            self.state.queue(),
-        )?;
+            .prepare(TEXT_RENDERER_MARGIN, &self.state)?;
 
         if config.fps.enable {
             self.fps_renderer.set_text(&format!(
@@ -189,15 +184,20 @@ impl<'a> NeedleBase<'a> {
             self.fps_renderer.set_text("");
         }
         self.fps_renderer.set_config(&config.fps.config);
+        self.fps_renderer.update(&self.state);
         self.fps_renderer
-            .update(self.state.queue(), self.state.surface_config());
-        self.fps_renderer.prepare(
-            TEXT_RENDERER_MARGIN,
-            self.state.device(),
-            self.state.queue(),
-        )?;
+            .prepare(TEXT_RENDERER_MARGIN, &self.state)?;
 
-        Ok(())
+        let event = self.state.queue().submit([]);
+
+        match self
+            .state
+            .device()
+            .poll(wgpu::PollType::WaitForSubmissionIndex(event))
+        {
+            Ok(_) => Ok(()),
+            Err(_) => Err(NeedleError::Other),
+        }
     }
 
     /// Update Imgui UI for needle
@@ -582,6 +582,17 @@ impl<'a> NeedleBase<'a> {
             0.1,
             &config.borrow().background_color,
         );
+        let ubo_bind_group_layout = BindGroupLayout::builder().add_ubo().build(
+            state.device(),
+            NeedleLabel::BindGroupLayout("Background UBO"),
+        );
+        let background_ubo = Ubo::new::<glm::Vec4>(
+            state.device(),
+            NeedleLabel::Buffer("Background UBO"),
+            &ubo_bind_group_layout,
+            0,
+            0,
+        )?;
         let background_buffer = Buffer::new(
             state,
             NeedleLabel::Buffer("Background"),
@@ -594,7 +605,9 @@ impl<'a> NeedleBase<'a> {
                 vert_shader_path: NeedleConfig::config_path(false, Some(vert_shader_path))?,
                 frag_shader_path: NeedleConfig::config_path(false, Some(frag_shader_path))?,
                 buffer: background_buffer,
-                vertex_buffer_layouts: Vertex::buffer_layout(),
+                ubo: Some(background_ubo),
+                vertex_buffer_layout: Vertex::buffer_layout(),
+                bind_group_layouts: vec![ubo_bind_group_layout],
                 depth_stencil: Some(depth_stencil_state.clone()),
                 label: Some("Background"),
             };
