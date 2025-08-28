@@ -21,7 +21,7 @@ clean:
 	@rm -rvf ${HOME}/.config/needle/shaders
 	@rm -rvf ${PKG}
 
-pkg: clean update fetch
+pkg: update
 	@make addlicense
 	@make shader-docker
 	@make pkg-linux_docker
