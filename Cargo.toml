@@ -21,4 +21,4 @@ wgpu = "25.0"
 winit = { version = "0.30"}
 
 [target.'cfg(windows)'.dependencies]
-winapi = {version = "0.3", features = ["wincon"]}
+winapi = { version = "0.3", features = ["wincon"] }
