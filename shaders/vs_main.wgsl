@@ -14,7 +14,7 @@ fn main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     out.position = vec4<f32>(in.position, 1.0);
-    out.color = background.xyzw;
+    out.color = vec4<f32>(background.xyz * background.w, background.w);
 
     return out;
 }
