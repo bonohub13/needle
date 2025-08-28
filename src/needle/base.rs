@@ -37,10 +37,7 @@ impl<'a> NeedleBase<'a> {
     const NEEDLE_IMGUI_SAVE_COUNT: usize = 2;
     const NEEDLE_IMGUI_DESCRIPTION_COUNT: usize = 4;
     //  - Background
-    #[cfg(target_os = "linux")]
     const BACKGROUND_COLOR_COUNT: usize = 4;
-    #[cfg(target_os = "windows")]
-    const BACKGROUND_COLOR_COUNT: usize = 3;
     //  - Clock Timer
     const CLOCK_TIMER_FONT_ROWS: usize = 5;
     const CLOCK_TIMER_FONT_COLOR_COUNT: usize = 3;
@@ -511,7 +508,6 @@ impl<'a> NeedleBase<'a> {
             "red (background)",
             "green (background)",
             "blue (background)",
-            #[cfg(target_os = "linux")]
             "alpha (background)",
         ]
     }
