@@ -2,9 +2,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.3",
   "version": 1,
-  "serialNumber": "urn:uuid:db180b91-8684-4fe9-bf5e-815d5b266b4c",
+  "serialNumber": "urn:uuid:7e56a746-abb6-408b-9806-5369141be41b",
   "metadata": {
-    "timestamp": "2025-08-28T15:05:51.061672599Z",
+    "timestamp": "2025-08-28T16:17:43.221706347Z",
     "tools": [
       {
         "vendor": "CycloneDX",
@@ -50,7 +50,7 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "git+https://github.com/bonohub13/needle-core?branch=rework%2Frenderer#0.2.1",
+      "bom-ref": "git+https://github.com/bonohub13/needle-core?branch=develop#0.2.1",
       "name": "needle-core",
       "version": "0.2.1",
       "scope": "required",
@@ -59,7 +59,7 @@
           "expression": "GPL-2.0-or-later"
         }
       ],
-      "purl": "pkg:cargo/needle-core@0.2.1?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Fbranch=rework/renderer%40e1ed9daa6f6ac034699f526e21de988ecbb318d5"
+      "purl": "pkg:cargo/needle-core@0.2.1?vcs_url=git%2Bhttps://github.com/bonohub13/needle-core%3Fbranch=develop%40309e9aec3018464db9130d013a4e98f33e849a16"
     },
     {
       "type": "library",
@@ -8823,7 +8823,7 @@
   ],
   "dependencies": [
     {
-      "ref": "git+https://github.com/bonohub13/needle-core?branch=rework%2Frenderer#0.2.1",
+      "ref": "git+https://github.com/bonohub13/needle-core?branch=develop#0.2.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#bytemuck@1.23.2",
         "registry+https://github.com/rust-lang/crates.io-index#chrono@0.4.41",
@@ -8852,7 +8852,7 @@
         "registry+https://github.com/rust-lang/crates.io-index#glm@0.3.0",
         "registry+https://github.com/rust-lang/crates.io-index#imgui@0.12.0",
         "registry+https://github.com/rust-lang/crates.io-index#log@0.4.27",
-        "git+https://github.com/bonohub13/needle-core?branch=rework%2Frenderer#0.2.1",
+        "git+https://github.com/bonohub13/needle-core?branch=develop#0.2.1",
         "registry+https://github.com/rust-lang/crates.io-index#pollster@0.4.0",
         "registry+https://github.com/rust-lang/crates.io-index#reqwest@0.12.23",
         "registry+https://github.com/rust-lang/crates.io-index#wgpu@25.0.2",
