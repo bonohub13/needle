@@ -58,13 +58,14 @@ Features in the TODO List that have been implemented will be erased from the lis
 - Features in queue for development/in active development
     | Date (Added)  | Feature                                   | Status                                |
     |:--------------|:------------------------------------------|:-------------------------------------:|
-    | 2024/12/22    | Transparent background for Windows        | In Development                        |
-    | 2025/02/10    | GUI for app configuration and etc.        | Feature released on Version 0.2.0     |
+    | 2024/12/22    | Transparent background for Windows        | Feature released on Version 0.2.3     |
     | 2025/02/10    | Websocket server/client                   | In Query                              |
-    | 2025/02/22    | Countdown timer                           | Implemented in commit 90d56c5         |
     | 2025/02/22    | Basic PvP matchpoint counter overlay      | In Query                              |
     | 2025/02/22    | Auto-update feature (optional)            | In Query                              |
-    | 2025/06/15    | Font selection                            | In Query                              |
+    | 2025/06/15    | Font selection                            | Feature released on Version 0.2.2     |
+    | 2025/08/30    | Toggle fullscreen                         | In Query                              |
+    | 2025/08/30    | Texture for background (optional)         | In Query                              |
+    | 2025/08/30    | Renderers for overlays (optional)         | In Query                              |
 
 ## Naming Scheme for Branch <a name="branch_naming_scheme"></a>
 - Naming convention for branches

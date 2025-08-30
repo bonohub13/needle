@@ -1,7 +1,7 @@
 [package]
 authors = ["bonohub13"]
 name = "needle"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "MIT"
 
@@ -14,7 +14,7 @@ font-loader = "0.11"
 glm = "0.3.0"
 imgui = { version = "0.12", features = [] }
 log = "0.4"
-needle-core = { git = "https://github.com/bonohub13/needle-core", branch="develop" }
+needle-core = { git = "https://github.com/bonohub13/needle-core", tag="0.2.2" }
 pollster = "0.4"
 reqwest = { version = "0.12", features = ["blocking"] }
 wgpu = "25.0"
