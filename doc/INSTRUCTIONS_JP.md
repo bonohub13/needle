@@ -47,6 +47,6 @@
 1. `NVIDIA Control Panel`を開きます
     - ![NVIDIA Control Panel](resources/common/2-1-1_NvidiaControlPanel.png)
 2. `3D設定の管理`ページに移動します
-    - ![Manage 3D Resources](resources/jp/2-1-2_Manage3dResources.png)
+    - ![Manage 3D Resources](resources/jp/2-1-2_Manage3dResources_JP.png)
 3. `Vulken/OpenGlの既存の方法`を`ネイティブを優先する`に設定
-    - ![Vulken/OpenGl present method](resources/jp/2-1-3_RenderMethod.png)
+    - ![Vulken/OpenGl present method](resources/jp/2-1-3_RenderMethod_JP.png)
