@@ -7,12 +7,14 @@ struct VertexOutput {
     @location(0) color: vec4<f32>,
 }
 
+@group(0) @binding(0) var<uniform> background: vec4<f32>;
+
 @vertex
 fn main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
     out.position = vec4<f32>(in.position, 1.0);
-    out.color = in.color;
+    out.color = vec4<f32>(background.xyz * background.w, background.w);
 
     return out;
 }

@@ -10,7 +10,8 @@ use app::*;
 use needle::*;
 use options::*;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
+use clap::Parser;
 use needle_core::NeedleConfig;
 use std::{cell::RefCell, rc::Rc};
 #[cfg(target_os = "windows")]
@@ -26,28 +27,28 @@ fn main() -> Result<()> {
 
     env_logger::init();
 
-    let app_option = AppOptions::new();
+    let args = NeedleArgs::parse();
+    let app_option = AppState::new(&args);
     let mut config_path = None;
 
     for opt in app_option.iter() {
         match opt {
-            AppOptions::Help | AppOptions::Version => {
-                println!("{}", opt);
+            AppState::Help | AppState::Version => {
+                println!("{opt}");
 
                 return Ok(());
             }
-            AppOptions::GenerateConfig(path) => {
+            AppState::GenerateConfig(path) => {
                 return Ok(NeedleConfig::config(Some(path))?);
             }
-            AppOptions::Unknown(_) => bail!("{}", opt),
-            AppOptions::ConfigFilePath(path) => {
+            AppState::ConfigFilePath(path) => {
                 config_path = Some(path.as_str());
             }
             _ => (),
         }
     }
 
-    let config = Rc::new(RefCell::new(NeedleConfig::from(config_path)?));
+    let config = Rc::new(RefCell::new(NeedleConfig::read(config_path)?));
 
     run(config)
 }

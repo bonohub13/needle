@@ -6,109 +6,82 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
+#[derive(Debug, Default, clap::Parser)]
+#[command(about, long_about = None, disable_help_flag = true, disable_version_flag = true)]
+pub struct NeedleArgs {
+    /// Display help message
+    #[arg(long, short)]
+    pub help: bool,
+
+    /// Display version information
+    #[arg(long, short)]
+    pub version: bool,
+
+    /// Generate default config
+    #[arg(long, default_value_t = String::new())]
+    pub gen_config: String,
+
+    /// Print default config to stdout
+    #[arg(long, short)]
+    pub print: bool,
+
+    /// Path for config file
+    #[arg(long, short, default_value_t = String::new())]
+    pub config: String,
+}
+
 #[derive(Debug, PartialEq, Clone)]
-pub enum AppOptions {
+pub enum AppState {
     Run,
     Help,
     Version,
     GenerateConfig(String),
     ConfigFilePath(String),
-    Unknown(String),
 }
 
-impl AppOptions {
+impl AppState {
     #[cfg(windows)]
     const NEWLINE: &'static str = "\r\n";
     #[cfg(not(windows))]
     const NEWLINE: &'static str = "\n";
-    pub fn new() -> Vec<Self> {
-        let args = env::args().collect::<Vec<_>>();
-        let mut skip_counter = 0;
-        let mut ret = vec![];
+    const MAX_ARGUMENTS: usize = 5;
+    pub fn new(args: &NeedleArgs) -> Vec<Self> {
+        let mut app_states = Vec::with_capacity(Self::MAX_ARGUMENTS);
 
-        for (i, arg) in args[1..].iter().enumerate() {
-            if skip_counter > 0 {
-                skip_counter -= 1;
-                continue;
-            }
-
-            Self::parse_str(arg).iter_mut().for_each(|opt| match opt {
-                Self::ConfigFilePath(ref mut path) | Self::GenerateConfig(ref mut path) => {
-                    if path.is_empty() {
-                        *path = if ((i + 2) < args.len()) && (args[i + 2] != "=") {
-                            // OPTION FILENAME
-                            skip_counter = 1;
-
-                            args[i + 2].clone()
-                        } else if (i + 3) < args.len() {
-                            // OPTION = FILENAME
-                            skip_counter = 2;
-
-                            args[i + 3].clone()
-                        } else {
-                            // If empty path is detected, it fallbacks into default path for config
-                            // file
-                            path.clone()
-                        }
-                    }
-
-                    ret.push(opt.clone());
-                }
-                _ => ret.push(opt.clone()),
-            });
+        if args.help || (args.print && !args.gen_config.is_empty()) {
+            app_states.push(Self::Help);
         }
 
-        if ret.is_empty() {
-            ret.push(Self::Run);
+        if args.version {
+            app_states.push(Self::Version);
         }
 
-        ret
-    }
-
-    fn parse_str(arg: &str) -> Vec<Self> {
-        match arg {
-            "--help" | "-h" => vec![Self::Help],
-            "--version" | "-v" => vec![Self::Version],
-            "--config" | "-c" => vec![Self::Run, Self::ConfigFilePath("".to_string())],
-            "--print" | "-p" => vec![Self::GenerateConfig("stdout".to_string())],
-            "--gen-config" => vec![Self::GenerateConfig("".to_string())],
-            "" | " " | "\t" => vec![Self::Run],
-            _ => {
-                let ret = if arg.starts_with("--config=") {
-                    let src = arg.split("=").collect::<Vec<_>>();
-                    let src = if src.len() == 1 {
-                        ""
-                    } else {
-                        src.last().unwrap_or(&"")
-                    };
-
-                    Self::ConfigFilePath(src.to_string())
-                } else if arg.starts_with("--gen-config=") {
-                    let dst = arg.split("=").collect::<Vec<_>>();
-                    let dst = if dst.len() == 1 {
-                        ""
-                    } else {
-                        dst.last().unwrap_or(&"")
-                    };
-
-                    Self::GenerateConfig(dst.to_string())
-                } else {
-                    Self::Unknown(arg.to_string())
-                };
-
-                vec![ret]
-            }
+        // Print and GenerateConfig is exclusive
+        if args.print ^ !args.gen_config.is_empty() {
+            app_states.push(Self::GenerateConfig(if args.print {
+                "stdout".to_string()
+            } else {
+                args.gen_config.clone()
+            }));
         }
+
+        if !args.config.is_empty() {
+            app_states.push(Self::ConfigFilePath(args.config.clone()));
+        }
+
+        app_states.push(Self::Run);
+
+        app_states
     }
 }
 
-impl Default for AppOptions {
+impl Default for AppState {
     fn default() -> Self {
         Self::Run
     }
 }
 
-impl Display for AppOptions {
+impl Display for AppState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::Run | Self::ConfigFilePath(_) | Self::GenerateConfig(_) => String::new(),
@@ -117,7 +90,7 @@ impl Display for AppOptions {
                 let app_version = env!("CARGO_PKG_VERSION");
                 let core_info = needle_core::version_info();
 
-                format!("{} {} ({})", app_name, app_version, core_info)
+                format!("{app_name} {app_version} ({core_info})")
             }
             Self::Help => {
                 let lines = [
@@ -141,17 +114,8 @@ impl Display for AppOptions {
                     .map(|s| format!("{}{}", s, Self::NEWLINE))
                     .collect()
             }
-            Self::Unknown(err) => {
-                let err = err
-                    .strip_prefix("--")
-                    .unwrap_or(err)
-                    .strip_prefix("-")
-                    .unwrap_or(err);
-
-                format!("Unknown option: '{}'{}", err, Self::NEWLINE)
-            }
         };
 
-        write!(f, "{}", msg)
+        write!(f, "{msg}")
     }
 }

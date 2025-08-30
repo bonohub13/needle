@@ -16,7 +16,7 @@ pub fn run(config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
     match event_loop.run_app(&mut app) {
         Ok(_) => Ok(()),
         Err(e) => {
-            log::error!("{}", e);
+            log::error!("{e}");
 
             Err(e)
         }

@@ -13,7 +13,9 @@ Go to [releases](https://github.com/bonohub13/needle/releases/latest) and downlo
 
 ## Instruction
 
-- Read the [instructions](./doc/INSTRUCTIONS.md) for examples to use in OBS Studio.
+- Read the [instructions](./doc/INSTRUCTIONS.md) for the following.
+    1. Examples to use in OBS Studio.
+    2. Background transparency settings for Windows.
 - For Japanese users: [instructions_jp](./doc/INSTRUCTIONS_JP.md)
 
 ## Getting Help

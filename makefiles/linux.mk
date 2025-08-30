@@ -9,7 +9,7 @@ linux-update:
 	$(CARGO) update --target=${TARGET_LINUX}
 
 linux-clippy:
-	$(CARGO) clippy --target=${TARGET_LINUX}
+	$(CARGO) clippy --target=${TARGET_LINUX} --release
 
 pkg-linux:
 	$(CARGO) build --release --target=${TARGET_LINUX}
