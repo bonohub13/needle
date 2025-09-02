@@ -469,8 +469,6 @@ impl<'a> NeedleBase<'a> {
 
     /// Render single frame for needle
     fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
-        let color = wgpu::Color::TRANSPARENT;
-
         self.state.render(|encoder| {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&NeedleLabel::RenderPass("").to_string()),
@@ -478,7 +476,7 @@ impl<'a> NeedleBase<'a> {
                     view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(color),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -495,6 +493,33 @@ impl<'a> NeedleBase<'a> {
             });
 
             self.background_renderer.render(&mut render_pass)?;
+
+            Ok(())
+        })?;
+
+        self.state.render(|encoder| {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some(&NeedleLabel::RenderPass("").to_string()),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: self.depth_texture.view(),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
             self.time_renderer.render(&mut render_pass)?;
             self.fps_renderer.render(&mut render_pass)?;
 
