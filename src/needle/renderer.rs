@@ -1,3 +1,6 @@
+// Copyright 2025 Kensuke Saito
+// SPDX-License-Identifier: MIT
+
 use anyhow::Result;
 use needle_core::{
     BindGroupLayout, Buffer, FontTypes, NeedleConfig, NeedleErr, NeedleLabel, Renderer,
