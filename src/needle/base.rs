@@ -1,12 +1,12 @@
 // Copyright 2025 Kensuke Saito
 // SPDX-License-Identifier: MIT
 
+use crate::needle::renderer::NeedleRenderer;
 use anyhow::Result;
 use imgui::Condition;
 use needle_core::{
-    BindGroupLayout, Buffer, FontTypes, ImguiMode, ImguiState, NeedleConfig, NeedleErr,
-    NeedleError, NeedleLabel, OpMode, Position, Renderer, ShaderRenderer, ShaderRendererDescriptor,
-    State, TextRenderer, Texture, Time, TimeFormat, Ubo, Vertex,
+    ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, OpMode, Position, State, Time,
+    TimeFormat,
 };
 use std::{
     cell::RefCell,
@@ -20,10 +20,7 @@ pub struct NeedleBase<'a> {
     pub window: Arc<Window>,
     state: State<'a>,
     pub imgui_state: ImguiState,
-    depth_texture: Texture,
-    background_renderer: ShaderRenderer,
-    time_renderer: TextRenderer,
-    fps_renderer: TextRenderer,
+    renderer: NeedleRenderer,
     clock_info: Time,
     pub current_frame: u64,
     pub next_frame: Instant,
@@ -65,27 +62,21 @@ impl<'a> NeedleBase<'a> {
         };
         let state = pollster::block_on(State::new(window.clone()))?;
         let imgui_state = ImguiState::new(window.clone(), config.clone(), &state);
-        let depth_texture = Texture::create_depth_texture(
-            state.device(),
-            state.surface_config(),
-            NeedleLabel::Texture("Depth"),
-        );
-        let (background, time, fps) = Self::create_renderers(
+        let renderer = NeedleRenderer::new(
             window.clone(),
             config.clone(),
             &state,
             vert_shader_path,
             frag_shader_path,
+            None,
+            None,
         )?;
 
         Ok(Self {
             window,
             state,
             imgui_state,
-            depth_texture,
-            background_renderer: background,
-            time_renderer: time,
-            fps_renderer: fps,
+            renderer,
             clock_info: Time::new(config.borrow().time.format),
             current_frame: 0,
             next_frame: Instant::now(),
@@ -111,13 +102,7 @@ impl<'a> NeedleBase<'a> {
     pub fn resize(&mut self, size: &winit::dpi::PhysicalSize<u32>) {
         if (size.width > 0) && (size.height > 0) {
             self.state.resize(size);
-            self.depth_texture = Texture::create_depth_texture(
-                self.state.device(),
-                self.state.surface_config(),
-                NeedleLabel::Texture("Depth"),
-            );
-            self.time_renderer.resize(size);
-            self.fps_renderer.resize(size);
+            self.renderer.resize(&self.state, size);
         }
     }
 
@@ -131,7 +116,7 @@ impl<'a> NeedleBase<'a> {
         self.update_imgui(config)?;
         self.update(config)?;
         self.window.pre_present_notify();
-        if let Err(err) = self.render_needle(&view) {
+        if let Err(err) = self.renderer.render(&mut self.state, &view) {
             match err {
                 NeedleError::Lost | NeedleError::Outdated => {
                     let size = self.window.inner_size();
@@ -158,35 +143,8 @@ impl<'a> NeedleBase<'a> {
 
     /// Update render content for new frame
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
-        const TEXT_RENDERER_MARGIN: f32 = 5.0;
-
-        let background = glm::vec4(
-            config.background_color[0],
-            config.background_color[1],
-            config.background_color[2],
-            config.background_color[3],
-        );
-
-        self.background_renderer
-            .write_buffer(&background, self.state.queue())?;
-        self.time_renderer.set_text(&self.clock_info.current_time());
-        self.time_renderer.set_config(&config.time.config);
-        self.time_renderer.update(&self.state);
-        self.time_renderer
-            .prepare(TEXT_RENDERER_MARGIN, &self.state)?;
-
-        if config.fps.enable {
-            self.fps_renderer.set_text(&format!(
-                "{:.3}",
-                config.fps.frame_limit as f64 - 1.0 / self.current_frame as f64
-            ));
-        } else {
-            self.fps_renderer.set_text("");
-        }
-        self.fps_renderer.set_config(&config.fps.config);
-        self.fps_renderer.update(&self.state);
-        self.fps_renderer
-            .prepare(TEXT_RENDERER_MARGIN, &self.state)?;
+        self.renderer
+            .update(&self.state, config, &self.clock_info, self.current_frame)?;
 
         let event = self.state.queue().submit([]);
 
@@ -263,7 +221,7 @@ impl<'a> NeedleBase<'a> {
                         }
                         ImguiMode::ClockTimer => {
                             // --- Font selection ---
-                            let fonts = self.time_renderer.fonts_mut();
+                            let fonts = self.renderer.clock.fonts_mut();
                             let font_names = fonts.font_names().unwrap_or([].into());
                             let font_names = font_names
                                 .iter()
@@ -287,7 +245,7 @@ impl<'a> NeedleBase<'a> {
                                 let font = &fonts.available_fonts()[clock_font as usize];
 
                                 config.time.font = Some(font.font.to_string());
-                                if let Err(e) = self.time_renderer.set_font(&font.font) {
+                                if let Err(e) = self.renderer.clock.set_font(&font.font) {
                                     log::error!("{font:?}");
                                     log::error!("{e}");
                                 }
@@ -467,66 +425,6 @@ impl<'a> NeedleBase<'a> {
         })
     }
 
-    /// Render single frame for needle
-    fn render_needle(&mut self, view: &wgpu::TextureView) -> NeedleErr<()> {
-        self.state.render(|encoder| {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(&NeedleLabel::RenderPass("").to_string()),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: self.depth_texture.view(),
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            self.background_renderer.render(&mut render_pass)?;
-
-            Ok(())
-        })?;
-
-        self.state.render(|encoder| {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(&NeedleLabel::RenderPass("").to_string()),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: self.depth_texture.view(),
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            self.time_renderer.render(&mut render_pass)?;
-            self.fps_renderer.render(&mut render_pass)?;
-
-            Ok(())
-        })
-    }
-
     #[inline]
     const fn background_color<'color>() -> [&'color str; NeedleBase::BACKGROUND_COLOR_COUNT] {
         [
@@ -590,79 +488,5 @@ impl<'a> NeedleBase<'a> {
             "License:",
             "  - MIT",
         ]
-    }
-
-    fn create_renderers(
-        window: Arc<Window>,
-        config: Rc<RefCell<NeedleConfig>>,
-        state: &State,
-        vert_shader_path: &str,
-        frag_shader_path: &str,
-    ) -> Result<(ShaderRenderer, TextRenderer, TextRenderer)> {
-        let window_size = window.inner_size();
-        let window_scale_factor = window.scale_factor();
-        let depth_stencil_state = Texture::default_depth_stencil();
-        let (background_vertices, indices) = Vertex::indexed_rectangle(
-            [1.0, 1.0],
-            [0.0, 0.0],
-            0.1,
-            &config.borrow().background_color,
-        );
-        let ubo_bind_group_layout = BindGroupLayout::builder().add_ubo().build(
-            state.device(),
-            NeedleLabel::BindGroupLayout("Background UBO"),
-        );
-        let background_ubo = Ubo::new::<glm::Vec4>(
-            state.device(),
-            NeedleLabel::Buffer("Background UBO"),
-            &ubo_bind_group_layout,
-            0,
-            0,
-        )?;
-        let background_buffer = Buffer::new(
-            state,
-            NeedleLabel::Buffer("Background"),
-            &background_vertices,
-            0,
-            Some(&indices),
-        );
-        let background_renderer = {
-            let desc = ShaderRendererDescriptor {
-                vert_shader_path: NeedleConfig::config_path(false, Some(vert_shader_path))?,
-                frag_shader_path: NeedleConfig::config_path(false, Some(frag_shader_path))?,
-                buffer: background_buffer,
-                ubo: Some(background_ubo),
-                vertex_buffer_layout: Vertex::buffer_layout(),
-                bind_group_layouts: vec![ubo_bind_group_layout],
-                depth_stencil: Some(depth_stencil_state.clone()),
-                label: Some("Background"),
-            };
-
-            ShaderRenderer::new(state, &desc)?
-        };
-        let mut time_renderer = TextRenderer::new(
-            state,
-            &config.borrow().time.config,
-            config.borrow().time.font.clone(),
-            &window_size,
-            window_scale_factor,
-            state.surface_config().format,
-            Some(depth_stencil_state.clone()),
-        )?;
-        let fps_renderer = TextRenderer::new(
-            state,
-            &config.borrow().fps.config,
-            None,
-            &window_size,
-            window_scale_factor,
-            state.surface_config().format,
-            Some(depth_stencil_state.clone()),
-        )?;
-
-        time_renderer
-            .fonts_mut()
-            .query_fonts(Some(FontTypes::Monospace))?;
-
-        Ok((background_renderer, time_renderer, fps_renderer))
     }
 }

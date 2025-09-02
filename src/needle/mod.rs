@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 mod base;
+mod renderer;
 
 use anyhow::Result;
 use base::NeedleBase;
