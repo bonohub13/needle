@@ -5,7 +5,7 @@ use crate::needle::renderer::NeedleRenderer;
 use anyhow::Result;
 use imgui::Condition;
 use needle_core::{
-    ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, OpMode, Position,
+    ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, NeedleLabel, OpMode, Position,
     ShaderDescriptor, State, Time, TimeFormat,
 };
 use std::{
@@ -49,7 +49,6 @@ impl<'a> NeedleBase<'a> {
         config: Rc<RefCell<NeedleConfig>>,
         title: &str,
         background_shader_desc: &ShaderDescriptor,
-        overlay_shader_desc: Option<&ShaderDescriptor>,
     ) -> Result<Self> {
         let window = {
             let attr = Window::default_attributes()
@@ -62,12 +61,20 @@ impl<'a> NeedleBase<'a> {
         };
         let state = pollster::block_on(State::new(window.clone()))?;
         let imgui_state = ImguiState::new(window.clone(), config.clone(), &state);
+        let overlay_shader_desc = if let Some(overlay) = &config.borrow().overlay {
+            overlay.shader_descriptor(
+                NeedleLabel::Shader("Overlay Vertex"),
+                NeedleLabel::Shader("Overlay Fragment"),
+            )?
+        } else {
+            None
+        };
         let renderer = NeedleRenderer::new(
             window.clone(),
             config.clone(),
             &state,
             background_shader_desc,
-            overlay_shader_desc,
+            overlay_shader_desc.as_ref(),
         )?;
 
         Ok(Self {

@@ -117,7 +117,6 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     config.clone(),
                     Self::APP_NAME,
                     &background_shader_desc,
-                    None,
                 ) {
                     Ok(base) => self.base = Some(base),
                     Err(e) => panic!("{}", e),
