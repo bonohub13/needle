@@ -5,8 +5,8 @@ use crate::needle::renderer::NeedleRenderer;
 use anyhow::Result;
 use imgui::Condition;
 use needle_core::{
-    ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, OpMode, Position, State, Time,
-    TimeFormat,
+    ImguiMode, ImguiState, NeedleConfig, NeedleErr, NeedleError, OpMode, Position,
+    ShaderDescriptor, State, Time, TimeFormat,
 };
 use std::{
     cell::RefCell,
@@ -48,8 +48,8 @@ impl<'a> NeedleBase<'a> {
         event_loop: &ActiveEventLoop,
         config: Rc<RefCell<NeedleConfig>>,
         title: &str,
-        vert_shader_path: &str,
-        frag_shader_path: &str,
+        background_shader_desc: &ShaderDescriptor,
+        overlay_shader_desc: Option<&ShaderDescriptor>,
     ) -> Result<Self> {
         let window = {
             let attr = Window::default_attributes()
@@ -66,10 +66,8 @@ impl<'a> NeedleBase<'a> {
             window.clone(),
             config.clone(),
             &state,
-            vert_shader_path,
-            frag_shader_path,
-            None,
-            None,
+            background_shader_desc,
+            overlay_shader_desc,
         )?;
 
         Ok(Self {

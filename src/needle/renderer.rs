@@ -4,7 +4,8 @@
 use anyhow::Result;
 use needle_core::{
     BindGroupLayout, Buffer, FontTypes, NeedleConfig, NeedleErr, NeedleLabel, Renderer,
-    ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer, Texture, Time, Ubo, Vertex,
+    ShaderDescriptor, ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer, Texture, Time,
+    Ubo, Vertex,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -22,10 +23,8 @@ impl NeedleRenderer {
         window: Arc<Window>,
         config: Rc<RefCell<NeedleConfig>>,
         state: &State,
-        vert_shader_path: &str,
-        frag_shader_path: &str,
-        overlay_vert_shader_path: Option<&str>,
-        overlay_frag_shader_path: Option<&str>,
+        background_shader_desc: &ShaderDescriptor,
+        overlay_shader_desc: Option<&ShaderDescriptor>,
     ) -> Result<Self> {
         const BACKGROUND_SIZE: [f32; 2] = [1.0; 2];
         const BACKGROUND_OFFSET: [f32; 2] = [0.0; 2];
@@ -65,9 +64,9 @@ impl NeedleRenderer {
                 0,
                 Some(&background_indices),
             );
+
             let desc = ShaderRendererDescriptor {
-                vert_shader_path: NeedleConfig::config_path(false, Some(vert_shader_path))?,
-                frag_shader_path: NeedleConfig::config_path(false, Some(frag_shader_path))?,
+                shader_desc: background_shader_desc.clone(),
                 buffer: background_buffer,
                 ubo: Some(background_ubo),
                 vertex_buffer_layout: Vertex::buffer_layout(),
@@ -78,7 +77,7 @@ impl NeedleRenderer {
 
             ShaderRenderer::new(state, &desc)
         }?;
-        let overlay = if overlay_vert_shader_path.is_some() && overlay_frag_shader_path.is_some() {
+        let overlay = if let Some(shader_desc) = overlay_shader_desc {
             let (overlay_vertices, overlay_indices) = Vertex::indexed_rectangle(
                 OVERLAY_SIZE,
                 OVERLAY_OFFSET,
@@ -94,8 +93,7 @@ impl NeedleRenderer {
             );
             let overlay = {
                 let desc = ShaderRendererDescriptor {
-                    vert_shader_path: NeedleConfig::config_path(false, overlay_vert_shader_path)?,
-                    frag_shader_path: NeedleConfig::config_path(false, overlay_frag_shader_path)?,
+                    shader_desc: shader_desc.clone(),
                     buffer: overlay_buffer,
                     ubo: None,
                     vertex_buffer_layout: Vertex::buffer_layout(),
