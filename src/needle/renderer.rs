@@ -29,7 +29,7 @@ impl NeedleRenderer {
         const BACKGROUND_SIZE: [f32; 2] = [1.0; 2];
         const BACKGROUND_OFFSET: [f32; 2] = [0.0; 2];
         const OVERLAY_SIZE: [f32; 2] = [0.9, 0.1];
-        const OVERLAY_OFFSET: [f32; 2] = [0.0, 0.01];
+        const OVERLAY_OFFSET: [f32; 2] = [0.0, -0.8];
 
         let window_size = window.inner_size();
         let window_scale_factor = window.scale_factor();
