@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use needle_core::{
-    BindGroupLayout, Buffer, FontTypes, NeedleConfig, NeedleErr, NeedleLabel, Renderer,
-    ShaderDescriptor, ShaderRenderer, ShaderRendererDescriptor, State, TextRenderer, Texture, Time,
-    Ubo, Vertex,
+    BindGroupLayout, Buffer, FontTypes, NeedleConfig, NeedleErr, NeedleLabel, Overlay,
+    OverlayRenderer, Renderer, ShaderDescriptor, ShaderRenderer, ShaderRendererDescriptor, State,
+    TextRenderer, TextRendererDescriptor, Texture, Time, Ubo, Vertex,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use winit::{dpi::PhysicalSize, window::Window};
@@ -13,7 +13,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 pub struct NeedleRenderer {
     depth_texture: Texture,
     background: ShaderRenderer,
-    overlay: Option<ShaderRenderer>,
+    overlays: Vec<OverlayRenderer>,
     pub clock: TextRenderer,
     pub fps: TextRenderer,
 }
@@ -24,13 +24,13 @@ impl NeedleRenderer {
         config: Rc<RefCell<NeedleConfig>>,
         state: &State,
         background_shader_desc: &ShaderDescriptor,
-        overlay_shader_desc: Option<&ShaderDescriptor>,
     ) -> Result<Self> {
-        const BACKGROUND_SIZE: [f32; 2] = [1.0; 2];
-        const BACKGROUND_OFFSET: [f32; 2] = [0.0; 2];
+        const BACKGROUND_SIZE: [f32; 2] = [2.0; 2];
+        const BACKGROUND_OFFSET: [f32; 2] = [-1.0; 2];
         const OVERLAY_SIZE: [f32; 2] = [0.9, 0.1];
         const OVERLAY_OFFSET: [f32; 2] = [0.0, -0.8];
 
+        let config = config.borrow();
         let window_size = window.inner_size();
         let window_scale_factor = window.scale_factor();
         let depth_stencil_state = Texture::default_depth_stencil();
@@ -44,7 +44,7 @@ impl NeedleRenderer {
                 BACKGROUND_SIZE,
                 BACKGROUND_OFFSET,
                 0.1,
-                &config.borrow().background_color,
+                &config.background_color,
             );
             let ubo_bind_group_layout = BindGroupLayout::builder().add_ubo().build(
                 state.device(),
@@ -77,67 +77,86 @@ impl NeedleRenderer {
 
             ShaderRenderer::new(state, &desc)
         }?;
-        let overlay = if let Some(shader_desc) = overlay_shader_desc {
+        let overlays = if let Some(overlay_cfgs) = &config.overlays {
+            let mut overlays: Vec<OverlayRenderer> = vec![];
             let (overlay_vertices, overlay_indices) = Vertex::indexed_rectangle(
                 OVERLAY_SIZE,
                 OVERLAY_OFFSET,
                 0.05,
                 &[1.0, 1.0, 1.0, 1.0],
             );
-            let overlay_buffer = Buffer::new(
-                state,
-                NeedleLabel::Buffer("Overlay"),
-                &overlay_vertices,
-                0,
-                Some(&overlay_indices),
-            );
-            let overlay = {
-                let desc = ShaderRendererDescriptor {
-                    shader_desc: shader_desc.clone(),
-                    buffer: overlay_buffer,
-                    ubo: None,
-                    vertex_buffer_layout: Vertex::buffer_layout(),
-                    bind_group_layouts: vec![],
-                    depth_stencil: Some(depth_stencil_state.clone()),
-                    label: Some("Overlay"),
-                };
+            for overlay_cfg in overlay_cfgs.iter() {
+                let overlay_buffer = Buffer::new(
+                    state,
+                    NeedleLabel::Buffer("Overlay"),
+                    &overlay_vertices,
+                    0,
+                    Some(&overlay_indices),
+                );
+                let shader_desc = overlay_cfg.shader_descriptor(
+                    NeedleLabel::Shader("Overlay Vertex"),
+                    NeedleLabel::Shader("Overlay Fragment"),
+                )?;
+                let overlay = {
+                    let shader_desc = ShaderRendererDescriptor {
+                        shader_desc: shader_desc.unwrap(),
+                        buffer: overlay_buffer,
+                        ubo: None,
+                        vertex_buffer_layout: Vertex::buffer_layout(),
+                        bind_group_layouts: vec![],
+                        depth_stencil: Some(depth_stencil_state.clone()),
+                        label: Some("Overlay"),
+                    };
+                    let text_desc = TextRendererDescriptor {
+                        config: &config.time.config,
+                        font: None,
+                        font_size: window_size,
+                        scale_factor: window_scale_factor as f32,
+                        format: state.surface_config().format,
+                        depth_stencil: Some(depth_stencil_state.clone()),
+                    };
 
-                ShaderRenderer::new(state, &desc)
-            }?;
+                    OverlayRenderer::new(state, &shader_desc, &text_desc, &overlay_cfg.info())
+                }?;
 
-            Some(overlay)
+                overlays.push(overlay);
+            }
+
+            overlays
         } else {
-            None
+            Vec::new()
         };
         let clock = {
-            let mut clock = TextRenderer::new(
-                state,
-                &config.borrow().time.config,
-                config.borrow().time.font.clone(),
-                &window_size,
-                window_scale_factor,
-                state.surface_config().format,
-                Some(depth_stencil_state.clone()),
-            )?;
+            let desc = TextRendererDescriptor {
+                config: &config.time.config,
+                font: config.time.font.clone(),
+                font_size: window_size,
+                scale_factor: window_scale_factor as f32,
+                format: state.surface_config().format,
+                depth_stencil: Some(depth_stencil_state.clone()),
+            };
+            let mut clock = TextRenderer::new(state, &desc)?;
 
             clock.fonts_mut().query_fonts(Some(FontTypes::Monospace))?;
 
             clock
         };
-        let fps = TextRenderer::new(
-            state,
-            &config.borrow().fps.config,
-            None,
-            &window_size,
-            window_scale_factor,
-            state.surface_config().format,
-            Some(depth_stencil_state.clone()),
-        )?;
+        let fps = {
+            let desc = TextRendererDescriptor {
+                config: &config.fps.config,
+                font: None,
+                font_size: window_size,
+                scale_factor: window_scale_factor as f32,
+                format: state.surface_config().format,
+                depth_stencil: Some(depth_stencil_state.clone()),
+            };
+            TextRenderer::new(state, &desc)?
+        };
 
         Ok(Self {
             depth_texture,
             background,
-            overlay,
+            overlays,
             clock,
             fps,
         })
@@ -152,6 +171,63 @@ impl NeedleRenderer {
         );
         self.clock.resize(size);
         self.fps.resize(size);
+    }
+
+    pub fn add_overlay(
+        &mut self,
+        state: &State,
+        window: Window,
+        config: &mut NeedleConfig,
+        overlay_cfg: Overlay,
+    ) -> NeedleErr<()> {
+        const OVERLAY_SIZE: [f32; 2] = [0.9, 0.1];
+        const OVERLAY_OFFSET: [f32; 2] = [0.0, -0.8];
+        let window_size = window.inner_size();
+        let window_scale_factor = window.scale_factor();
+        let depth_stencil_state = Texture::default_depth_stencil();
+        let shader_desc = overlay_cfg.shader_descriptor(
+            NeedleLabel::Shader("Overlay Vertex"),
+            NeedleLabel::Shader("Overlay Fragment"),
+        )?;
+        let (overlay_vertices, overlay_indices) =
+            Vertex::indexed_rectangle(OVERLAY_SIZE, OVERLAY_OFFSET, 0.05, &[1.0, 1.0, 1.0, 1.0]);
+        let overlay_buffer = Buffer::new(
+            state,
+            NeedleLabel::Buffer("Overlay"),
+            &overlay_vertices,
+            0,
+            Some(&overlay_indices),
+        );
+        let overlay = {
+            let shader_desc = ShaderRendererDescriptor {
+                shader_desc: shader_desc.unwrap(),
+                buffer: overlay_buffer,
+                ubo: None,
+                vertex_buffer_layout: Vertex::buffer_layout(),
+                bind_group_layouts: vec![],
+                depth_stencil: Some(depth_stencil_state.clone()),
+                label: Some("Overlay"),
+            };
+            let text_desc = TextRendererDescriptor {
+                config: &config.time.config,
+                font: None,
+                font_size: window_size,
+                scale_factor: window_scale_factor as f32,
+                format: state.surface_config().format,
+                depth_stencil: Some(depth_stencil_state.clone()),
+            };
+
+            OverlayRenderer::new(state, &shader_desc, &text_desc, &overlay_cfg.info())
+        }?;
+
+        self.overlays.push(overlay);
+        if let Some(overlays) = &mut config.overlays {
+            overlays.push(overlay_cfg);
+        } else {
+            config.overlays = Some(vec![overlay_cfg]);
+        }
+
+        Ok(())
     }
 
     #[inline]
@@ -223,7 +299,7 @@ impl NeedleRenderer {
             Ok(())
         })?;
 
-        if let Some(overlay) = &mut self.overlay {
+        for overlay in self.overlays.iter_mut() {
             state.render(|encoder| {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some(&NeedleLabel::RenderPass("").to_string()),
