@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 use imgui::Condition;
-use needle_core::{ImguiMode, NeedleConfig, NeedleErr, OpMode, Position, TimeFormat};
+use needle_core::{ImguiMode, NeedleConfig, NeedleErr, OpMode, Overlay, Position, TimeFormat};
 use std::time::Duration;
 
 impl super::NeedleBase<'_> {
@@ -243,6 +243,134 @@ impl super::NeedleBase<'_> {
                                 if config.time.config.position != position {
                                     config.fps.config.position = position;
                                 }
+                            }
+                        }
+                        ImguiMode::Overlay => {
+                            let mut overlays = config.overlays.clone().unwrap_or_default();
+                            let mut current_overlay =
+                                if let Some(current_overlay) = self.current_overlay {
+                                    if overlays.is_empty() {
+                                        0
+                                    } else {
+                                        current_overlay.max(i32::MAX as usize) as i32
+                                    }
+                                } else {
+                                    0
+                                };
+                            let mut overlay = if overlays.is_empty() {
+                                Overlay {
+                                    vertex_shader: Self::OVERLAY_VERTEX_SHADER_DEFAULT_PATH.into(),
+                                    fragment_shader: Self::OVERLAY_FRAGMENT_SHADER_DEFAULT_PATH
+                                        .into(),
+                                    ..Default::default()
+                                }
+                            } else {
+                                overlays[current_overlay.min(0) as usize].clone()
+                            };
+                            let mut add_overlay = false;
+
+                            if ui.button(Self::OVERLAY_ADD_TAG) {
+                                add_overlay = true;
+                                current_overlay += if overlays.is_empty() { 0 } else { 1 };
+                                overlay.name = format!("Overlay {}", overlays.len());
+                                overlays.push(overlay.clone());
+                            }
+
+                            if ui.list_box(
+                                Self::OVERLAY_LIST_TAG,
+                                &mut current_overlay,
+                                &overlays
+                                    .clone()
+                                    .iter()
+                                    .map(|overlay| &overlay.name)
+                                    .collect::<Vec<_>>(),
+                                Self::OVERLAY_LIST_ROW_LENGTH,
+                            ) {
+                                if overlays.is_empty() {
+                                    self.current_overlay = None
+                                } else {
+                                    let current_overlay = if add_overlay {
+                                        overlays.len() - 1
+                                    } else {
+                                        current_overlay.min(0) as usize
+                                    };
+
+                                    overlay = overlays[current_overlay].clone();
+
+                                    self.current_overlay = Some(current_overlay)
+                                }
+                            }
+
+                            // Name
+                            let mut new_name = overlay.name.clone();
+                            if ui.input_text(Self::OVERLAY_NAME_TAG, &mut new_name).build() {
+                                overlay.name = new_name;
+                            }
+                            // Vertex shader path
+                            ui.input_text(
+                                Self::OVERLAY_VERTEX_SHADER_TAG,
+                                &mut overlay.vertex_shader,
+                            )
+                            .build();
+                            // Fragment shader path
+                            ui.input_text(
+                                Self::OVERLAY_FRAGMENT_SHADER_TAG,
+                                &mut overlay.fragment_shader,
+                            )
+                            .build();
+                            // Position (xy)
+                            ui.text(Self::OVERLAY_POSITION_TAG);
+                            overlay
+                                .position
+                                .iter_mut()
+                                .zip(Self::overlay_position())
+                                .for_each(|(position, tag)| {
+                                    ui.slider(
+                                        tag,
+                                        Self::OVERLAY_POSITION_RANGE[0],
+                                        Self::OVERLAY_POSITION_RANGE[1],
+                                        position,
+                                    );
+                                });
+                            // Size (xy)
+                            ui.text(Self::OVERLAY_SIZE_TAG);
+                            overlay.size.iter_mut().zip(Self::overlay_size()).for_each(
+                                |(size, tag)| {
+                                    ui.slider(
+                                        tag,
+                                        Self::OVERLAY_SIZE_RANGE[0],
+                                        Self::OVERLAY_SIZE_RANGE[1],
+                                        size,
+                                    );
+                                },
+                            );
+                            // Color (rgba)
+                            ui.text(Self::OVERLAY_COLOR_TAG);
+                            overlay
+                                .color
+                                .iter_mut()
+                                .zip(Self::overlay_color())
+                                .for_each(|(color, tag)| {
+                                    ui.slider(
+                                        tag,
+                                        Self::OVERLAY_COLOR_RANGE[0],
+                                        Self::OVERLAY_COLOR_RANGE[1],
+                                        color,
+                                    );
+                                });
+
+                            if !overlays.is_empty() {
+                                if add_overlay {
+                                    save_result = self.renderer.add_overlay(
+                                        &self.state,
+                                        &self.window,
+                                        config,
+                                        overlay.clone(),
+                                    );
+                                }
+
+                                overlays[current_overlay.min(0) as usize] = overlay;
+                                config.overlays = Some(overlays);
                             }
                         }
                     }

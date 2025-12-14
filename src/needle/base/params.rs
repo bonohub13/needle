@@ -12,6 +12,10 @@ const CLOCK_TIMER_POSITION_COUNT: usize = 9;
 //  - FPS
 const FPS_FONT_COLOR_COUNT: usize = 3;
 const FPS_POSITION_COUNT: usize = 4;
+//  - Overlay
+const OVERLAY_POSITION_COUNT: usize = 2;
+const OVERLAY_SIZE_COUNT: usize = 2;
+const OVERLAY_COLOR_COUNT: usize = 4;
 
 // Background related parameters
 impl<'background> super::NeedleBase<'background> {
@@ -96,8 +100,44 @@ impl<'fps> super::NeedleBase<'fps> {
     }
 }
 
-impl super::NeedleBase<'static> {
-    /* Overlay */
+// Overlay related parameters
+#[allow(dead_code)]
+impl<'overlay> super::NeedleBase<'overlay> {
+    pub(crate) const OVERLAY_LIST_ROW_LENGTH: i32 = 10;
+    pub(crate) const OVERLAY_ADD_TAG: &'overlay str = "Add Overlay:";
+    pub(crate) const OVERLAY_REMOVE_TAG: &'overlay str = "Remove Overlay:";
+    pub(crate) const OVERLAY_LIST_TAG: &'overlay str = "Overlays:";
+    pub(crate) const OVERLAY_NAME_TAG: &'overlay str = "Name:";
+    pub(crate) const OVERLAY_VERTEX_SHADER_TAG: &'overlay str = "Vertex shader path";
+    pub(crate) const OVERLAY_VERTEX_SHADER_DEFAULT_PATH: &'overlay str = "overlay.vert.spv";
+    pub(crate) const OVERLAY_FRAGMENT_SHADER_TAG: &'overlay str = "Fragment shader path";
+    pub(crate) const OVERLAY_FRAGMENT_SHADER_DEFAULT_PATH: &'overlay str = "overlay.frag.spv";
+    pub(crate) const OVERLAY_POSITION_TAG: &'overlay str = "Position";
+    pub(crate) const OVERLAY_POSITION_RANGE: [f32; 2] = [-1f32, 1f32];
+    pub(crate) const OVERLAY_SIZE_TAG: &'overlay str = "Size";
+    pub(crate) const OVERLAY_SIZE_RANGE: [f32; 2] = [0f32, 2f32];
+    pub(crate) const OVERLAY_COLOR_TAG: &'overlay str = "Color";
+    pub(crate) const OVERLAY_COLOR_RANGE: [f32; 2] = [0f32, 1f32];
+
+    #[inline]
+    pub(crate) const fn overlay_position() -> [&'overlay str; OVERLAY_POSITION_COUNT] {
+        ["x (overlay)", "y (overlay)"]
+    }
+
+    #[inline]
+    pub(crate) const fn overlay_size() -> [&'overlay str; OVERLAY_SIZE_COUNT] {
+        ["width (overlay)", "height (overlay)"]
+    }
+
+    #[inline]
+    pub(crate) const fn overlay_color() -> [&'overlay str; OVERLAY_COLOR_COUNT] {
+        [
+            "red (overlay)",
+            "green (overlay)",
+            "blue (overlay)",
+            "alpha (overlay)",
+        ]
+    }
 }
 
 // General parameters

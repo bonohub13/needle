@@ -27,8 +27,6 @@ impl NeedleRenderer {
     ) -> Result<Self> {
         const BACKGROUND_SIZE: [f32; 2] = [2.0; 2];
         const BACKGROUND_OFFSET: [f32; 2] = [-1.0; 2];
-        const OVERLAY_SIZE: [f32; 2] = [0.9, 0.1];
-        const OVERLAY_OFFSET: [f32; 2] = [0.0, -0.8];
 
         let config = config.borrow();
         let window_size = window.inner_size();
@@ -79,13 +77,13 @@ impl NeedleRenderer {
         }?;
         let overlays = if let Some(overlay_cfgs) = &config.overlays {
             let mut overlays: Vec<OverlayRenderer> = vec![];
-            let (overlay_vertices, overlay_indices) = Vertex::indexed_rectangle(
-                OVERLAY_SIZE,
-                OVERLAY_OFFSET,
-                0.05,
-                &[1.0, 1.0, 1.0, 1.0],
-            );
             for overlay_cfg in overlay_cfgs.iter() {
+                let (overlay_vertices, overlay_indices) = Vertex::indexed_rectangle(
+                    overlay_cfg.size,
+                    overlay_cfg.position,
+                    0.05,
+                    &overlay_cfg.color,
+                );
                 let overlay_buffer = Buffer::new(
                     state,
                     NeedleLabel::Buffer("Overlay"),
@@ -98,6 +96,10 @@ impl NeedleRenderer {
                     NeedleLabel::Shader("Overlay Fragment"),
                 )?;
                 let overlay = {
+                    /* TODO: Initialize overlay using UBO
+                     * Required to rework shader
+                     * Requires new struct for overlay (DO NOT create this on needle-core)
+                     */
                     let shader_desc = ShaderRendererDescriptor {
                         shader_desc: shader_desc.unwrap(),
                         buffer: overlay_buffer,
@@ -171,17 +173,19 @@ impl NeedleRenderer {
         );
         self.clock.resize(size);
         self.fps.resize(size);
+        self.overlays
+            .iter_mut()
+            .for_each(|overlay| overlay.resize(size));
     }
 
     pub fn add_overlay(
         &mut self,
         state: &State,
-        window: Window,
+        window: &Window,
         config: &mut NeedleConfig,
         overlay_cfg: Overlay,
     ) -> NeedleErr<()> {
-        const OVERLAY_SIZE: [f32; 2] = [0.9, 0.1];
-        const OVERLAY_OFFSET: [f32; 2] = [0.0, -0.8];
+        const OVERLAY_DEPTH: f32 = 0.05;
         let window_size = window.inner_size();
         let window_scale_factor = window.scale_factor();
         let depth_stencil_state = Texture::default_depth_stencil();
@@ -189,8 +193,12 @@ impl NeedleRenderer {
             NeedleLabel::Shader("Overlay Vertex"),
             NeedleLabel::Shader("Overlay Fragment"),
         )?;
-        let (overlay_vertices, overlay_indices) =
-            Vertex::indexed_rectangle(OVERLAY_SIZE, OVERLAY_OFFSET, 0.05, &[1.0, 1.0, 1.0, 1.0]);
+        let (overlay_vertices, overlay_indices) = Vertex::indexed_rectangle(
+            overlay_cfg.size,
+            overlay_cfg.position,
+            OVERLAY_DEPTH,
+            &overlay_cfg.color,
+        );
         let overlay_buffer = Buffer::new(
             state,
             NeedleLabel::Buffer("Overlay"),
@@ -264,6 +272,16 @@ impl NeedleRenderer {
         self.fps.set_config(&config.fps.config);
         self.fps.update(state);
         self.fps.prepare(TEXT_RENDERER_MARGIN, state)?;
+
+        if let Some(overlay_cfgs) = &config.overlays {
+            if overlay_cfgs.len() == self.overlays.len() {
+                for (overlay, _cfg) in self.overlays.iter_mut().zip(overlay_cfgs) {
+                    // TODO: Use UBO and update overlay with UBO data!
+                    overlay.update(state);
+                    overlay.prepare(TEXT_RENDERER_MARGIN, state)?;
+                }
+            }
+        }
 
         Ok(())
     }
