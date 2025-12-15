@@ -115,7 +115,7 @@ impl<'overlay> super::NeedleBase<'overlay> {
     pub(crate) const OVERLAY_POSITION_TAG: &'overlay str = "Position";
     pub(crate) const OVERLAY_POSITION_RANGE: [f32; 2] = [-1f32, 1f32];
     pub(crate) const OVERLAY_SIZE_TAG: &'overlay str = "Size";
-    pub(crate) const OVERLAY_SIZE_RANGE: [f32; 2] = [0f32, 2f32];
+    pub(crate) const OVERLAY_SIZE_RANGE: [f32; 2] = [0f32, 1f32];
     pub(crate) const OVERLAY_COLOR_TAG: &'overlay str = "Color";
     pub(crate) const OVERLAY_COLOR_RANGE: [f32; 2] = [0f32, 1f32];
 

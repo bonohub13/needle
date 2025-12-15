@@ -252,7 +252,7 @@ impl super::NeedleBase<'_> {
                                     if overlays.is_empty() {
                                         0
                                     } else {
-                                        current_overlay.max(i32::MAX as usize) as i32
+                                        current_overlay.max(0) as i32
                                     }
                                 } else {
                                     0
@@ -265,13 +265,18 @@ impl super::NeedleBase<'_> {
                                     ..Default::default()
                                 }
                             } else {
-                                overlays[current_overlay.min(0) as usize].clone()
+                                overlays[current_overlay.max(0) as usize].clone()
                             };
                             let mut add_overlay = false;
 
                             if ui.button(Self::OVERLAY_ADD_TAG) {
                                 add_overlay = true;
-                                current_overlay += if overlays.is_empty() { 0 } else { 1 };
+                                current_overlay = if overlays.is_empty() {
+                                    0
+                                } else {
+                                    overlays.len() as i32
+                                };
+                                self.current_overlay = Some(current_overlay.max(0) as usize);
                                 overlay.name = format!("Overlay {}", overlays.len());
                                 overlays.push(overlay.clone());
                             }
@@ -280,7 +285,6 @@ impl super::NeedleBase<'_> {
                                 Self::OVERLAY_LIST_TAG,
                                 &mut current_overlay,
                                 &overlays
-                                    .clone()
                                     .iter()
                                     .map(|overlay| &overlay.name)
                                     .collect::<Vec<_>>(),
@@ -289,14 +293,9 @@ impl super::NeedleBase<'_> {
                                 if overlays.is_empty() {
                                     self.current_overlay = None
                                 } else {
-                                    let current_overlay = if add_overlay {
-                                        overlays.len() - 1
-                                    } else {
-                                        current_overlay.min(0) as usize
-                                    };
+                                    let current_overlay = current_overlay.max(0) as usize;
 
                                     overlay = overlays[current_overlay].clone();
-
                                     self.current_overlay = Some(current_overlay)
                                 }
                             }
@@ -369,7 +368,7 @@ impl super::NeedleBase<'_> {
                                     );
                                 }
 
-                                overlays[current_overlay.min(0) as usize] = overlay;
+                                overlays[current_overlay.max(0) as usize] = overlay;
                                 config.overlays = Some(overlays);
                             }
                         }

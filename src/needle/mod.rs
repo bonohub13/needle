@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 mod base;
+mod buffer;
 mod renderer;
 
 use anyhow::Result;
