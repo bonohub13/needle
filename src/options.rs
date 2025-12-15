@@ -30,8 +30,9 @@ pub struct NeedleArgs {
     pub config: String,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub enum AppState {
+    #[default]
     Run,
     Help,
     Version,
@@ -72,12 +73,6 @@ impl AppState {
         app_states.push(Self::Run);
 
         app_states
-    }
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self::Run
     }
 }
 
