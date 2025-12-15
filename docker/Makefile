@@ -14,6 +14,8 @@ WINDOWS_IMAGE_FILE := windows.dockerfile
 all: build-base build-linux build-windows build-shader
 
 build-base:
+	docker image pull rust:latest
+	docker image pull debian:12-slim
 	docker build . -t ${BUILD_IMAGE_NAME}:${BASE_IMAGE_TAG} \
 		-f ${BASE_IMAGE_FILE} ${DOCKERFLAG}
 

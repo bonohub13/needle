@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 mod base;
+mod buffer;
+mod renderer;
 
 use anyhow::Result;
 use base::NeedleBase;
-use needle_core::{NeedleConfig, NeedleError};
+use needle_core::{NeedleConfig, NeedleError, NeedleLabel, ShaderDescriptor};
 use std::{
     cell::RefCell,
     fs::{self, OpenOptions},
@@ -25,12 +27,14 @@ pub struct Needle<'window> {
     config: Option<Rc<RefCell<NeedleConfig>>>,
 }
 
-impl Needle<'_> {
-    const APP_NAME: &'static str = env!("CARGO_PKG_NAME");
-    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-    const VERTEX_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.vert.spv";
-    const FRAGMENT_SHADER_DEFAULT_PATH: &'static str = "shaders/spv/shader.frag.spv";
-    const RELEASE_URL: &'static str = "https://github.com/bonohub13/needle/releases/download";
+impl<'a> Needle<'a> {
+    const APP_NAME: &'a str = env!("CARGO_PKG_NAME");
+    const VERSION: &'a str = env!("CARGO_PKG_VERSION");
+    const VERTEX_SHADER_DEFAULT_PATH: &'a str = "shaders/spv/shader.vert.spv";
+    const BACKGROUND_VERTEX_SHADER_LABEL: &'a str = "Background Vertex";
+    const FRAGMENT_SHADER_DEFAULT_PATH: &'a str = "shaders/spv/shader.frag.spv";
+    const BACKGROUND_FRAGMENT_SHADER_LABEL: &'a str = "Background Fragment";
+    const RELEASE_URL: &'a str = "https://github.com/bonohub13/needle/releases/download";
 
     pub fn set_config(&mut self, config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
         let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
@@ -94,12 +98,26 @@ impl<'a> ApplicationHandler for Needle<'a> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.base.is_none() {
             if let Some(config) = self.config.as_ref() {
+                let background_shader_desc = ShaderDescriptor {
+                    vertex: NeedleConfig::config_path(
+                        false,
+                        Some(Self::VERTEX_SHADER_DEFAULT_PATH),
+                    )
+                    .unwrap_or_else(|e| panic!("{}", e)),
+                    vertex_label: NeedleLabel::Shader(Self::BACKGROUND_VERTEX_SHADER_LABEL),
+                    fragment: NeedleConfig::config_path(
+                        false,
+                        Some(Self::FRAGMENT_SHADER_DEFAULT_PATH),
+                    )
+                    .unwrap_or_else(|e| panic!("{}", e)),
+                    fragment_label: NeedleLabel::Shader(Self::BACKGROUND_FRAGMENT_SHADER_LABEL),
+                };
+
                 match NeedleBase::new(
                     event_loop,
                     config.clone(),
                     Self::APP_NAME,
-                    Self::VERTEX_SHADER_DEFAULT_PATH,
-                    Self::FRAGMENT_SHADER_DEFAULT_PATH,
+                    &background_shader_desc,
                 ) {
                     Ok(base) => self.base = Some(base),
                     Err(e) => panic!("{}", e),
@@ -133,7 +151,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     event:
                         KeyEvent {
                             state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Space),
+                            physical_key: PhysicalKey::Code(KeyCode::F1),
                             ..
                         },
                     ..
