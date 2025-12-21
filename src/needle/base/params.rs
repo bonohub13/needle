@@ -6,6 +6,8 @@ const NEEDLE_IMGUI_SAVE_COUNT: usize = 2;
 const NEEDLE_IMGUI_DESCRIPTION_COUNT: usize = 4;
 //  - Background
 const BACKGROUND_COLOR_COUNT: usize = 4;
+//  - Window
+const WINDOW_TYPE_COUNT: usize = 2;
 //  - Clock Timer
 const CLOCK_TIMER_FONT_COLOR_COUNT: usize = 3;
 const CLOCK_TIMER_POSITION_COUNT: usize = 9;
@@ -31,6 +33,15 @@ impl<'background> super::NeedleBase<'background> {
             "blue (background)",
             "alpha (background)",
         ]
+    }
+}
+
+impl<'window> super::NeedleBase<'window> {
+    pub(crate) const WINDOW_TYPE_TAG: &'window str = "Window option:";
+
+    #[inline]
+    pub(crate) const fn window_type() -> [&'window str; WINDOW_TYPE_COUNT] {
+        ["Fullscreen", "Windowed"]
     }
 }
 

@@ -15,7 +15,10 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use winit::{event_loop::ActiveEventLoop, window::Window};
+use winit::{
+    event_loop::ActiveEventLoop,
+    window::{Fullscreen, Window},
+};
 
 pub struct NeedleBase<'a> {
     pub window: Arc<Window>,
@@ -39,10 +42,20 @@ impl<'a> NeedleBase<'a> {
         title: &str,
         background_shader_desc: &ShaderDescriptor,
     ) -> Result<Self> {
+        let enable_fullscreen = if let Some(window_cfg) = &config.borrow().window {
+            if window_cfg.fullscreen {
+                Some(Fullscreen::Borderless(None))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         let window = {
             let attr = Window::default_attributes()
                 .with_title(title)
                 .with_resizable(true)
+                .with_fullscreen(enable_fullscreen)
                 .with_transparent(true);
             let window = event_loop.create_window(attr)?;
 

@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: MIT
 
 use imgui::Condition;
-use needle_core::{ImguiMode, NeedleConfig, NeedleErr, OpMode, Overlay, Position, TimeFormat};
+use needle_core::{
+    ImguiMode, NeedleConfig, NeedleErr, OpMode, Overlay, Position, TimeFormat, Window,
+};
 use std::time::Duration;
+use winit::window::Fullscreen;
 
 impl super::NeedleBase<'_> {
     /// Update Imgui UI for needle
@@ -40,6 +43,39 @@ impl super::NeedleBase<'_> {
                                         &mut config.background_color[i],
                                     ) {};
                                 });
+                        }
+                        ImguiMode::Window => {
+                            let current_window_state = if let Some(window_cfg) = &config.window {
+                                if window_cfg.fullscreen {
+                                    0
+                                } else {
+                                    1
+                                }
+                            } else {
+                                1
+                            };
+
+                            ui.text(Self::WINDOW_TYPE_TAG);
+                            Self::window_type().iter().enumerate().for_each(|(i, tag)| {
+                                if ui.radio_button_bool(tag, current_window_state == i) {
+                                    let enable_fullscreen = i == 0;
+
+                                    if let Some(window_cfg) = &mut config.window {
+                                        window_cfg.fullscreen = enable_fullscreen;
+                                    } else {
+                                        config.window = Some(Window {
+                                            fullscreen: enable_fullscreen,
+                                        });
+                                    }
+
+                                    if enable_fullscreen {
+                                        self.window
+                                            .set_fullscreen(Some(Fullscreen::Borderless(None)));
+                                    } else {
+                                        self.window.set_fullscreen(None);
+                                    }
+                                }
+                            })
                         }
                         ImguiMode::ClockTimer => {
                             // --- Font selection ---
