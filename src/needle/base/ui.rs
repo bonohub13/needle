@@ -120,7 +120,7 @@ impl super::NeedleBase<'_> {
                                 });
 
                             // --- Font scale ---
-                            let mut clock_scale = (config.time.config.scale * 100.0) as u8;
+                            let mut clock_scale = (config.time.config.scale * 50.0) as u8;
                             if ui.slider(
                                 Self::CLOCK_TIMER_FONT_SCALE_TAG,
                                 Self::CLOCK_TIMER_FONT_SCALE_RANGE[0],
@@ -288,7 +288,7 @@ impl super::NeedleBase<'_> {
                                     if overlays.is_empty() {
                                         0
                                     } else {
-                                        current_overlay.max(0) as i32
+                                        current_overlay
                                     }
                                 } else {
                                     0
@@ -301,7 +301,7 @@ impl super::NeedleBase<'_> {
                                     ..Default::default()
                                 }
                             } else {
-                                overlays[current_overlay.max(0) as usize].clone()
+                                overlays[current_overlay].clone()
                             };
                             let mut add_overlay = false;
 
@@ -310,16 +310,17 @@ impl super::NeedleBase<'_> {
                                 current_overlay = if overlays.is_empty() {
                                     0
                                 } else {
-                                    overlays.len() as i32
+                                    overlays.len()
                                 };
-                                self.current_overlay = Some(current_overlay.max(0) as usize);
+                                self.current_overlay = Some(current_overlay);
                                 overlay.name = format!("Overlay {}", overlays.len());
                                 overlays.push(overlay.clone());
                             }
 
+                            let mut current_overlay_i32 = current_overlay as i32;
                             if ui.list_box(
                                 Self::OVERLAY_LIST_TAG,
-                                &mut current_overlay,
+                                &mut current_overlay_i32,
                                 &overlays
                                     .iter()
                                     .map(|overlay| &overlay.name)
@@ -329,7 +330,7 @@ impl super::NeedleBase<'_> {
                                 if overlays.is_empty() {
                                     self.current_overlay = None
                                 } else {
-                                    let current_overlay = current_overlay.max(0) as usize;
+                                    let current_overlay = current_overlay_i32.max(0) as usize;
 
                                     overlay = overlays[current_overlay].clone();
                                     self.current_overlay = Some(current_overlay)
@@ -404,7 +405,7 @@ impl super::NeedleBase<'_> {
                                     );
                                 }
 
-                                overlays[current_overlay.max(0) as usize] = overlay;
+                                overlays[current_overlay] = overlay;
                                 config.overlays = Some(overlays);
                             }
                         }

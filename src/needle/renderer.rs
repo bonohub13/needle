@@ -181,11 +181,11 @@ impl NeedleRenderer {
             state.surface_config(),
             NeedleLabel::Texture("Depth"),
         );
-        self.clock.resize(size);
-        self.fps.resize(size);
         self.overlays
             .iter_mut()
             .for_each(|overlay| overlay.resize(size));
+        self.clock.resize(size);
+        self.fps.resize(size);
     }
 
     pub fn add_overlay(
@@ -317,9 +317,10 @@ impl NeedleRenderer {
                     view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: self.depth_texture.view(),
@@ -331,44 +332,13 @@ impl NeedleRenderer {
                 }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
 
             self.background.render(&mut render_pass)?;
 
-            Ok(())
-        })?;
+            drop(render_pass);
 
-        for overlay in self.overlays.iter_mut() {
-            state.render(|encoder| {
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some(&NeedleLabel::RenderPass("").to_string()),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                        view: self.depth_texture.view(),
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        }),
-                        stencil_ops: None,
-                    }),
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-
-                overlay.render(&mut render_pass)?;
-
-                Ok(())
-            })?;
-        }
-
-        state.render(|encoder| {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&NeedleLabel::RenderPass("").to_string()),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -378,6 +348,7 @@ impl NeedleRenderer {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: self.depth_texture.view(),
@@ -389,12 +360,26 @@ impl NeedleRenderer {
                 }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
+
+            for overlay in self.overlays.iter_mut() {
+                overlay.render(&mut render_pass)?;
+            }
 
             self.clock.render(&mut render_pass)?;
             self.fps.render(&mut render_pass)?;
+            self.clock.render(&mut render_pass)?;
+            self.fps.render(&mut render_pass)?;
+
+            drop(render_pass);
 
             Ok(())
         })
+    }
+
+    pub fn trim(&mut self) {
+        self.clock.trim();
+        self.fps.trim();
     }
 }

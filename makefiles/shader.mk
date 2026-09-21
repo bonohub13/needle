@@ -13,10 +13,10 @@ shader-docker:
 		make docker-exec
 
 shader: prepare
-	$(NAGA) --shader-stage vert ${SHADER_DIR}/vs_main.wgsl ${SPIRV_DIR}/shader.vert.spv
-	$(NAGA) --shader-stage frag ${SHADER_DIR}/fs_main.wgsl ${SPIRV_DIR}/shader.frag.spv
-	$(NAGA) --shader-stage vert ${SHADER_DIR}/vs_overlay.wgsl ${SPIRV_DIR}/overlay.vert.spv
-	$(NAGA) --shader-stage frag ${SHADER_DIR}/fs_overlay.wgsl ${SPIRV_DIR}/overlay.frag.spv
+	$(NAGA) --entry-point main --shader-stage vert ${SHADER_DIR}/vs_main.wgsl ${SPIRV_DIR}/shader.vert.spv
+	$(NAGA) --entry-point main --shader-stage frag ${SHADER_DIR}/fs_main.wgsl ${SPIRV_DIR}/shader.frag.spv
+	$(NAGA) --entry-point main --shader-stage vert ${SHADER_DIR}/vs_overlay.wgsl ${SPIRV_DIR}/overlay.vert.spv
+	$(NAGA) --entry-point main --shader-stage frag ${SHADER_DIR}/fs_overlay.wgsl ${SPIRV_DIR}/overlay.frag.spv
 
 prepare:
 	if [ ! -d ${SPIRV_DIR} ]; then mkdir -pv ${SPIRV_DIR}; fi

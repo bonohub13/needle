@@ -107,7 +107,10 @@ impl<'a> NeedleBase<'a> {
 
     /// Render single frame of all objects in needle
     pub fn render(&mut self, config: &mut NeedleConfig) -> Result<()> {
-        self.state.device().poll(wgpu::PollType::Wait)?;
+        self.state.device().poll(wgpu::PollType::Wait {
+            timeout: None,
+            submission_index: None,
+        })?;
         let texture = self.state.get_current_texture()?;
         let view = texture
             .texture
@@ -134,8 +137,12 @@ impl<'a> NeedleBase<'a> {
         }
 
         self.imgui_state.render(&self.state, &view)?;
-        self.state.device().poll(wgpu::PollType::Wait)?;
-        texture.present();
+        self.state.queue().present(texture);
+        self.renderer.trim();
+        self.state.device().poll(wgpu::PollType::Wait {
+            timeout: None,
+            submission_index: None,
+        })?;
 
         Ok(())
     }
@@ -147,11 +154,10 @@ impl<'a> NeedleBase<'a> {
 
         let event = self.state.queue().submit([]);
 
-        match self
-            .state
-            .device()
-            .poll(wgpu::PollType::WaitForSubmissionIndex(event))
-        {
+        match self.state.device().poll(wgpu::PollType::Wait {
+            submission_index: Some(event),
+            timeout: None,
+        }) {
             Ok(_) => Ok(()),
             Err(_) => Err(NeedleError::Other),
         }
