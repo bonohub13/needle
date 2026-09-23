@@ -37,11 +37,11 @@ impl<'a> Needle<'a> {
     const RELEASE_URL: &'a str = "https://github.com/bonohub13/needle/releases/download";
 
     pub fn set_config(&mut self, config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
-        let shader_path = NeedleConfig::config_path(false, Some("shaders/spv"))?;
+        let shader_path = NeedleConfig::config_path(false, false, Some("shaders/spv"))?;
         let vert_shader_path =
-            NeedleConfig::config_path(false, Some(Self::VERTEX_SHADER_DEFAULT_PATH))?;
+            NeedleConfig::config_path(false, true, Some(Self::VERTEX_SHADER_DEFAULT_PATH))?;
         let frag_shader_path =
-            NeedleConfig::config_path(false, Some(Self::FRAGMENT_SHADER_DEFAULT_PATH))?;
+            NeedleConfig::config_path(false, true, Some(Self::FRAGMENT_SHADER_DEFAULT_PATH))?;
 
         if !(vert_shader_path.exists() && frag_shader_path.exists()) {
             if !shader_path.exists() {
@@ -70,7 +70,7 @@ impl<'a> Needle<'a> {
     /// Download specified shader
     fn write(path: &str) -> Result<()> {
         let write_path =
-            match NeedleConfig::config_path(false, Some(&format!("shaders/spv/{path}"))) {
+            match NeedleConfig::config_path(false, true, Some(&format!("shaders/spv/{path}"))) {
                 Ok(p) => Ok(p),
                 Err(_) => Err(NeedleError::InvalidPath),
             }?;
@@ -101,12 +101,14 @@ impl<'a> ApplicationHandler for Needle<'a> {
                 let background_shader_desc = ShaderDescriptor {
                     vertex: NeedleConfig::config_path(
                         false,
+                        true,
                         Some(Self::VERTEX_SHADER_DEFAULT_PATH),
                     )
                     .unwrap_or_else(|e| panic!("{}", e)),
                     vertex_label: NeedleLabel::Shader(Self::BACKGROUND_VERTEX_SHADER_LABEL),
                     fragment: NeedleConfig::config_path(
                         false,
+                        true,
                         Some(Self::FRAGMENT_SHADER_DEFAULT_PATH),
                     )
                     .unwrap_or_else(|e| panic!("{}", e)),
