@@ -53,6 +53,7 @@ impl<'clock_timer> super::NeedleBase<'clock_timer> {
     pub(crate) const CLOCK_TIMER_FONT_COLOR_TAG: &'clock_timer str = "Font Color";
     pub(crate) const CLOCK_TIMER_FONT_SCALE_TAG: &'clock_timer str = "Font Scale";
     pub(crate) const CLOCK_TIMER_FONT_SCALE_RANGE: [u8; 2] = [1, u8::MAX];
+    pub(crate) const CLOCK_TIMER_FONT_SCALE_MULTIPLIER: f32 = 50f32;
     pub(crate) const CLOCK_TIMER_POSITION_TAG: &'clock_timer str = "Clock Position";
     pub(crate) const CLOCK_TIMER_MODE_TAG: &'clock_timer str = "Mode:";
     pub(crate) const CLOCK_TIMER_FORMAT_MODE_TAG: &'clock_timer str = "Format Mode";
