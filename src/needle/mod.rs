@@ -153,7 +153,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     event:
                         KeyEvent {
                             state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::F1),
+                            physical_key: PhysicalKey::Code(KeyCode::Space),
                             ..
                         },
                     ..
