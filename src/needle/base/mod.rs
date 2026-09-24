@@ -69,6 +69,7 @@ impl<'a> NeedleBase<'a> {
             &state,
             background_shader_desc,
         )?;
+        let frame_limit = config.borrow().fps.frame_limit;
 
         Ok(Self {
             window,
@@ -79,7 +80,11 @@ impl<'a> NeedleBase<'a> {
             current_overlay: None,
             current_frame: 0,
             next_frame: Instant::now(),
-            fps_limit: Duration::from_secs_f64(1.0 / config.borrow().fps.frame_limit as f64),
+            fps_limit: Duration::from_secs_f64(if frame_limit > 0 {
+                1.0 / config.borrow().fps.frame_limit as f64
+            } else {
+                0f64
+            }),
             fps_update_limit: Duration::from_secs_f64(1.0),
             fps_update: Instant::now(),
         })
@@ -143,7 +148,7 @@ impl<'a> NeedleBase<'a> {
     /// Update render content for new frame
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
         self.renderer
-            .update(&self.state, config, &self.clock_info, self.current_frame)?;
+            .update(&self.state, config, &self.clock_info)?;
 
         let event = self.state.queue().submit([]);
 
