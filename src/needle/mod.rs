@@ -153,7 +153,7 @@ impl<'a> ApplicationHandler for Needle<'a> {
                     event:
                         KeyEvent {
                             state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::F1),
+                            physical_key: PhysicalKey::Code(KeyCode::Space),
                             ..
                         },
                     ..
@@ -187,13 +187,16 @@ impl<'a> ApplicationHandler for Needle<'a> {
 
                         event_loop.exit();
                     }
-                    base.next_frame += base.fps_limit;
 
-                    if (base.fps_update - frame_time) > base.fps_update_limit {
-                        base.fps_update = frame_time;
-                        base.current_frame = 0;
+                    if base.fps_limit.as_secs_f64() > 0f64 {
+                        base.next_frame += base.fps_limit;
+
+                        if (base.fps_update - frame_time) > base.fps_update_limit {
+                            base.fps_update = frame_time;
+                            base.current_frame = 0;
+                        }
+                        std::thread::sleep(base.next_frame - frame_time);
                     }
-                    std::thread::sleep(base.next_frame - frame_time);
                 }
                 _ => (),
             }

@@ -120,14 +120,17 @@ impl super::NeedleBase<'_> {
                                 });
 
                             // --- Font scale ---
-                            let mut clock_scale = (config.time.config.scale * 50.0) as u8;
+                            let mut clock_scale = (config.time.config.scale
+                                * Self::CLOCK_TIMER_FONT_SCALE_MULTIPLIER)
+                                as u8;
                             if ui.slider(
                                 Self::CLOCK_TIMER_FONT_SCALE_TAG,
                                 Self::CLOCK_TIMER_FONT_SCALE_RANGE[0],
                                 Self::CLOCK_TIMER_FONT_SCALE_RANGE[1],
                                 &mut clock_scale,
                             ) {
-                                config.time.config.scale = clock_scale as f32 / 50.0;
+                                config.time.config.scale =
+                                    clock_scale as f32 / Self::CLOCK_TIMER_FONT_SCALE_MULTIPLIER;
                             }
                             ui.separator();
 
@@ -317,7 +320,7 @@ impl super::NeedleBase<'_> {
                                 overlays.push(overlay.clone());
                             }
 
-                            let mut current_overlay_i32 = current_overlay as i32;
+                            let mut current_overlay_i32 = (current_overlay & 0x7FFFFFFF) as i32;
                             if ui.list_box(
                                 Self::OVERLAY_LIST_TAG,
                                 &mut current_overlay_i32,
