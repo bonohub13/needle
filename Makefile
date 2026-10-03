@@ -1,6 +1,7 @@
 CARGO := cargo
 TAR := tar
 ZIP := zip
+LLD ?= ld
 
 SPIRV_DIR := shaders/spv
 MAKEFILES_DIR := makefiles
@@ -11,6 +12,10 @@ include ${MAKEFILES_DIR}/windows.mk
 include ${MAKEFILES_DIR}/shader.mk
 include ${MAKEFILES_DIR}/license.mk
 include ${MAKEFILES_DIR}/docs.mk
+
+ifeq ($(shell command -v ${LLD} 2>/dev/null),)
+	RUSTFLAGS += "-C link-arg=-fuse-ld=${LLD}"
+endif
 
 all: build run
 
@@ -61,9 +66,11 @@ clippy-docker:
 	@make windows-clippy_docker
 
 build: fmt
+	LLD := mold
 	@$(CARGO) build --offline
 
 release: fmt shader-docker
+	LLD := lld
 	@$(CARGO) build --release --offline
 
 run:
