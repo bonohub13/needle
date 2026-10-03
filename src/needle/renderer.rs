@@ -7,7 +7,7 @@ use needle_core::{
     OverlayRenderer, Renderer, ShaderDescriptor, ShaderRenderer, ShaderRendererDescriptor, State,
     TextRenderer, TextRendererDescriptor, Texture, Time, Ubo, Vertex,
 };
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct NeedleRenderer {
@@ -16,6 +16,7 @@ pub struct NeedleRenderer {
     overlays: Vec<OverlayRenderer>,
     pub clock: TextRenderer,
     pub fps: TextRenderer,
+    last_frame: Option<Instant>,
 }
 
 impl NeedleRenderer {
@@ -171,6 +172,7 @@ impl NeedleRenderer {
             overlays,
             clock,
             fps,
+            last_frame: None,
         })
     }
 
@@ -263,7 +265,6 @@ impl NeedleRenderer {
         state: &State,
         config: &NeedleConfig,
         clock_info: &Time,
-        current_frame: u64,
     ) -> NeedleErr<()> {
         const TEXT_RENDERER_MARGIN: f32 = 5.0;
 
@@ -281,10 +282,22 @@ impl NeedleRenderer {
         self.clock.prepare(TEXT_RENDERER_MARGIN, state)?;
 
         if config.fps.enable {
-            self.fps.set_text(&format!(
-                "{:.3}",
-                (config.fps.frame_limit - 1) as f64 / current_frame as f64
-            ));
+            if let Some(last_frame) = self.last_frame {
+                let current_frame = Instant::now();
+                let frame_delta = (current_frame - last_frame).as_secs_f64();
+
+                self.fps.set_text(&format!(
+                    "{:.3}",
+                    if frame_delta > 0f64 {
+                        1f64 / frame_delta
+                    } else {
+                        0f64
+                    }
+                ));
+                self.last_frame = Some(current_frame);
+            } else {
+                self.last_frame = Some(Instant::now());
+            }
         } else {
             self.fps.set_text("");
         }

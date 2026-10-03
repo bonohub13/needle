@@ -66,6 +66,7 @@ Features in the TODO List that have been implemented will be erased from the lis
     | 2025/08/30    | Toggle fullscreen                         | In Query                              |
     | 2025/08/30    | Texture for background (optional)         | In Query                              |
     | 2025/08/30    | Renderers for overlays (optional)         | In Query                              |
+    | 2026/09/22    | Update dependencies (text renderer broken)| In Development                        |
 
 ## Naming Scheme for Branch <a name="branch_naming_scheme"></a>
 - Naming convention for branches
@@ -76,3 +77,4 @@ Features in the TODO List that have been implemented will be erased from the lis
     |bugfix/xyz         |Fixing bugs xyz                            |
     |development/xyz    |Other development things including xyz     |
     |testing/xyz        |Testing xyz                                |
+    |update/xyz         |Updating xyz                               |
