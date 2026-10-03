@@ -305,15 +305,15 @@ impl NeedleRenderer {
         self.fps.update(state);
         self.fps.prepare(TEXT_RENDERER_MARGIN, state)?;
 
-        if let Some(overlay_cfgs) = &config.overlays {
-            if overlay_cfgs.len() == self.overlays.len() {
-                for (overlay, cfg) in self.overlays.iter_mut().zip(overlay_cfgs) {
-                    let overlay_data =
-                        super::buffer::Overlay::new(&cfg.position, &cfg.size, &cfg.color);
-                    overlay.write_buffer(&overlay_data, state.queue())?;
-                    overlay.update(state);
-                    overlay.prepare(TEXT_RENDERER_MARGIN, state)?;
-                }
+        if let Some(overlay_cfgs) = &config.overlays
+            && overlay_cfgs.len() == self.overlays.len()
+        {
+            for (overlay, cfg) in self.overlays.iter_mut().zip(overlay_cfgs) {
+                let overlay_data =
+                    super::buffer::Overlay::new(&cfg.position, &cfg.size, &cfg.color);
+                overlay.write_buffer(&overlay_data, state.queue())?;
+                overlay.update(state);
+                overlay.prepare(TEXT_RENDERER_MARGIN, state)?;
             }
         }
 

@@ -13,14 +13,10 @@ pub fn run(config: Rc<RefCell<NeedleConfig>>) -> Result<()> {
 
     app.set_config(config)?;
     event_loop.set_control_flow(ControlFlow::Poll);
-    match event_loop.run_app(&mut app) {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            log::error!("{e}");
-
-            Err(e)
-        }
-    }?;
+    event_loop.run_app(&mut app).map_err(|err| {
+        log::error!("{err}");
+        err
+    })?;
 
     Ok(())
 }

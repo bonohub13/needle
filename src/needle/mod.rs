@@ -70,20 +70,15 @@ impl<'a> Needle<'a> {
     /// Download specified shader
     fn write(path: &str) -> Result<()> {
         let write_path =
-            match NeedleConfig::config_path(false, true, Some(&format!("shaders/spv/{path}"))) {
-                Ok(p) => Ok(p),
-                Err(_) => Err(NeedleError::InvalidPath),
-            }?;
+            NeedleConfig::config_path(false, true, Some(&format!("shaders/spv/{path}")))
+                .map_err(|_| NeedleError::InvalidPath)?;
         let src_url = format!("{}/{}/{}", Self::RELEASE_URL, Self::VERSION, path);
-        let mut file = match OpenOptions::new()
+        let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(write_path)
-        {
-            Ok(file) => Ok(file),
-            Err(_) => Err(NeedleError::InvalidPath),
-        }?;
+            .map_err(|_| NeedleError::InvalidPath)?;
         let resp = reqwest::blocking::get(&src_url)?;
         let content = resp.bytes()?;
 
@@ -96,34 +91,34 @@ impl<'a> Needle<'a> {
 
 impl<'a> ApplicationHandler for Needle<'a> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if self.base.is_none() {
-            if let Some(config) = self.config.as_ref() {
-                let background_shader_desc = ShaderDescriptor {
-                    vertex: NeedleConfig::config_path(
-                        false,
-                        true,
-                        Some(Self::VERTEX_SHADER_DEFAULT_PATH),
-                    )
-                    .unwrap_or_else(|e| panic!("{}", e)),
-                    vertex_label: NeedleLabel::Shader(Self::BACKGROUND_VERTEX_SHADER_LABEL),
-                    fragment: NeedleConfig::config_path(
-                        false,
-                        true,
-                        Some(Self::FRAGMENT_SHADER_DEFAULT_PATH),
-                    )
-                    .unwrap_or_else(|e| panic!("{}", e)),
-                    fragment_label: NeedleLabel::Shader(Self::BACKGROUND_FRAGMENT_SHADER_LABEL),
-                };
+        if self.base.is_none()
+            && let Some(config) = self.config.as_ref()
+        {
+            let background_shader_desc = ShaderDescriptor {
+                vertex: NeedleConfig::config_path(
+                    false,
+                    true,
+                    Some(Self::VERTEX_SHADER_DEFAULT_PATH),
+                )
+                .unwrap_or_else(|e| panic!("{}", e)),
+                vertex_label: NeedleLabel::Shader(Self::BACKGROUND_VERTEX_SHADER_LABEL),
+                fragment: NeedleConfig::config_path(
+                    false,
+                    true,
+                    Some(Self::FRAGMENT_SHADER_DEFAULT_PATH),
+                )
+                .unwrap_or_else(|e| panic!("{}", e)),
+                fragment_label: NeedleLabel::Shader(Self::BACKGROUND_FRAGMENT_SHADER_LABEL),
+            };
 
-                match NeedleBase::new(
-                    event_loop,
-                    config.clone(),
-                    Self::APP_NAME,
-                    &background_shader_desc,
-                ) {
-                    Ok(base) => self.base = Some(base),
-                    Err(e) => panic!("{}", e),
-                }
+            match NeedleBase::new(
+                event_loop,
+                config.clone(),
+                Self::APP_NAME,
+                &background_shader_desc,
+            ) {
+                Ok(base) => self.base = Some(base),
+                Err(e) => panic!("{}", e),
             }
         }
     }
@@ -134,7 +129,9 @@ impl<'a> ApplicationHandler for Needle<'a> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let (Some(base), Some(config)) = (self.base.as_mut(), self.config.as_ref()) {
+        if let Some(base) = self.base.as_mut()
+            && let Some(config) = self.config.as_ref()
+        {
             base.current_frame += 1;
             match event {
                 WindowEvent::CloseRequested
