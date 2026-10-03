@@ -15,7 +15,7 @@ use clap::Parser;
 use needle_core::NeedleConfig;
 use std::{cell::RefCell, rc::Rc};
 #[cfg(target_os = "windows")]
-use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+use winapi::um::wincon::{ATTACH_PARENT_PROCESS, AttachConsole};
 
 fn main() -> Result<()> {
     // Enable CLI for Windows (A workaround for #![windows_subsystem = "windows"])

@@ -94,11 +94,7 @@ impl<'fps> super::NeedleBase<'fps> {
 
     #[inline]
     pub(crate) const fn fps_enable(enable: bool) -> &'fps str {
-        if enable {
-            "Enable"
-        } else {
-            "Disable"
-        }
+        if enable { "Enable" } else { "Disable" }
     }
 
     #[inline]
