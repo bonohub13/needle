@@ -6,4 +6,3 @@
 /pkg
 /*.json
 /shaders/spv
-/Cargo.lock
