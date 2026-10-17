@@ -94,7 +94,7 @@ impl<'a> NeedleBase<'a> {
     /// If clock mode is set to clock, this fails.
     pub fn start_clock(&mut self) -> NeedleErr<()> {
         match self.clock_info.mode() {
-            OpMode::Clock => Err(NeedleError::TimerStartFailure),
+            OpMode::Clock => Ok(()),
             OpMode::CountDownTimer(_) | OpMode::CountUpTimer => {
                 self.clock_info.toggle_timer();
                 Ok(())

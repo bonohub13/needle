@@ -1897,6 +1897,7 @@ dependencies = [
 [[package]]
 name = "needle-core"
 version = "0.2.2"
+source = "git+https://github.com/bonohub13/needle-core?branch=develop#a3d8edb2c5545480d651aa4cb9397aa9e240f2e7"
 dependencies = [
  "chrono",
  "dialog",
