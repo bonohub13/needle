@@ -129,77 +129,80 @@ impl<'a> ApplicationHandler for Needle<'a> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let Some(base) = self.base.as_mut()
-            && let Some(config) = self.config.as_ref()
-        {
-            base.current_frame += 1;
-            match event {
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => {
+        let Some(base) = self.base.as_mut() else {
+            return;
+        };
+        let Some(config) = self.config.as_ref() else {
+            return;
+        };
+
+        base.current_frame += 1;
+        match event {
+            WindowEvent::CloseRequested
+            | WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Escape),
+                        ..
+                    },
+                ..
+            } => {
+                event_loop.exit();
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Space),
+                        ..
+                    },
+                ..
+            } => {
+                if let Err(e) = base.start_clock() {
+                    log::error!("{e}");
                     event_loop.exit();
                 }
-                WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Space),
-                            ..
-                        },
-                    ..
-                } => {
-                    if let Err(e) = base.start_clock() {
-                        log::error!("{e}");
-                        event_loop.exit();
-                    }
-                }
-                WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Insert),
-                            ..
-                        },
-                    ..
-                } => {
-                    base.imgui_state.toggle_imgui();
-                }
-                WindowEvent::Resized(physical_size) => {
-                    base.resize(&physical_size);
-                }
-                WindowEvent::RedrawRequested => {
-                    /* Check for window has been done in the if statement above */
-                    base.window.request_redraw();
-                    let frame_time = Instant::now();
-                    base.imgui_state.update(frame_time);
-                    if let Err(err) = base.render(&mut config.borrow_mut()) {
-                        log::error!("{err}");
-
-                        event_loop.exit();
-                    }
-
-                    if base.fps_limit.as_secs_f64() > 0f64 {
-                        base.next_frame += base.fps_limit;
-
-                        if (base.fps_update - frame_time) > base.fps_update_limit {
-                            base.fps_update = frame_time;
-                            base.current_frame = 0;
-                        }
-                        std::thread::sleep(base.next_frame - frame_time);
-                    }
-                }
-                _ => (),
             }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Insert),
+                        ..
+                    },
+                ..
+            } => {
+                base.imgui_state.toggle_imgui();
+            }
+            WindowEvent::Resized(physical_size) => {
+                base.resize(&physical_size);
+            }
+            WindowEvent::RedrawRequested => {
+                /* Check for window has been done in the if statement above */
+                base.window.request_redraw();
+                let frame_time = Instant::now();
+                base.imgui_state.update(frame_time);
+                if let Err(err) = base.render(&mut config.borrow_mut()) {
+                    log::error!("{err}");
 
-            base.imgui_state
-                .handle_event(&base.window, window_id, event);
+                    event_loop.exit();
+                }
+
+                if base.fps_limit.as_secs_f64() > 0f64 {
+                    base.next_frame += base.fps_limit;
+
+                    if (base.fps_update - frame_time) > base.fps_update_limit {
+                        base.fps_update = frame_time;
+                        base.current_frame = 0;
+                    }
+                    std::thread::sleep(base.next_frame - frame_time);
+                }
+            }
+            _ => (),
         }
+
+        base.imgui_state
+            .handle_event(&base.window, window_id, event);
     }
 }
