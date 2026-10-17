@@ -15,7 +15,7 @@ glm = "0.3.0"
 imgui = { version = "0.12", features = [] }
 log = "0.4"
 # needle-core = { path = "./needle-core" }
-needle-core = { git = "https://github.com/bonohub13/needle-core", branch = "develop" }
+needle-core = { git = "https://github.com/bonohub13/needle-core", branch = "main" }
 pollster = "1.0"
 reqwest = { version = "0.13", features = ["blocking"] }
 wgpu = "30.0"
