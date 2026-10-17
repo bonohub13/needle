@@ -2,7 +2,7 @@
 authors = ["bonohub13"]
 name = "needle"
 version = "0.2.3"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 
 [dependencies]

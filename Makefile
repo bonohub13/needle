@@ -61,10 +61,18 @@ clippy-docker:
 	@make windows-clippy_docker
 
 build: fmt
-	@$(CARGO) build --offline
+	if command -v mold; then \
+		RUSTFLAGS="-C link-arg=-fuse-ld=mold" $(CARGO) build --offline \
+	else \
+		@$(CARGO) build --offline \
+	fi
 
 release: fmt shader-docker
-	@$(CARGO) build --release --offline
+	if command -v lld; then \
+		RUSTFLAGS="-C link-arg=-fuse-ld=lld" $(CARGO) build --release --offline; \
+	else \
+		@$(CARGO) build --release --offline; \
+	fi
 
 run:
 	@$(CARGO) run --release --offline

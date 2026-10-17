@@ -159,12 +159,13 @@ impl<'a> NeedleBase<'a> {
 
         let event = self.state.queue().submit([]);
 
-        match self.state.device().poll(wgpu::PollType::Wait {
-            submission_index: Some(event),
-            timeout: None,
-        }) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(NeedleError::Other),
-        }
+        self.state
+            .device()
+            .poll(wgpu::PollType::Wait {
+                submission_index: Some(event),
+                timeout: None,
+            })
+            .map(|_| ())
+            .map_err(|_| NeedleError::Other)
     }
 }

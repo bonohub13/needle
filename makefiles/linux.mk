@@ -12,10 +12,18 @@ linux-clippy:
 	$(CARGO) clippy --target=${TARGET_LINUX} --release
 
 pkg-linux:
-	$(CARGO) build --release --target=${TARGET_LINUX}
+	if command -v lld; then \
+		RUSTFLAGS="-C link-arg=-fuse-ld=lld" $(CARGO) build --release --target=${TARGET_LINUX}; \
+	else \
+		@$(CARGO) build --release --target=${TARGET_LINUX}; \
+	fi
 
 debug-linux:
-	$(CARGO) build --target=${TARGET_LINUX}
+	if command -v mold; then \
+		RUSTFLAGS="-C link-arg=-fuse-ld=mold" $(CARGO) build --target=${TARGET_LINUX}; \
+	else \
+		@$(CARGO) build --target=${TARGET_LINUX}; \
+	fi
 
 linux-clippy_docker:
 	@IMAGE_NAME=${RUST_DOCKER_IMAGE_NAME} TAG=${LINUX_IMAGE_TAG} CMD="make linux-clippy" \

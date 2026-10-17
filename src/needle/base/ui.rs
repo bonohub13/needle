@@ -46,11 +46,7 @@ impl super::NeedleBase<'_> {
                         }
                         ImguiMode::Window => {
                             let current_window_state = if let Some(window_cfg) = &config.window {
-                                if window_cfg.fullscreen {
-                                    0
-                                } else {
-                                    1
-                                }
+                                if window_cfg.fullscreen { 0 } else { 1 }
                             } else {
                                 1
                             };
