@@ -118,6 +118,7 @@ impl<'a> NeedleBase<'a> {
         })?;
         let texture = match self.state.get_current_texture(self.window.clone()) {
             Ok(texture) => texture,
+            #[allow(dead_code)]
             Err(err) => {
                 #[cfg(debug_assertions)]
                 eprintln!("{err}");
