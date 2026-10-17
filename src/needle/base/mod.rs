@@ -21,10 +21,10 @@ use winit::{
 };
 
 pub struct NeedleBase<'a> {
-    pub window: Arc<Window>,
-    state: State<'a>,
-    pub imgui_state: ImguiState,
     renderer: NeedleRenderer,
+    pub imgui_state: ImguiState,
+    state: State<'a>,
+    pub window: Arc<Window>,
     clock_info: Time,
     pub current_overlay: Option<usize>,
     pub current_frame: u64,
@@ -116,12 +116,20 @@ impl<'a> NeedleBase<'a> {
             timeout: None,
             submission_index: None,
         })?;
-        let texture = self.state.get_current_texture()?;
+        let texture = match self.state.get_current_texture(self.window.clone()) {
+            Ok(texture) => texture,
+            Err(err) => {
+                #[cfg(debug_assertions)]
+                eprintln!("{err}");
+
+                return Ok(());
+            }
+        };
         let view = texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        self.update_imgui(config)?;
         self.update(config)?;
+        self.update_imgui(config)?;
         self.window.pre_present_notify();
         if let Err(err) = self.renderer.render(&mut self.state, &view) {
             match err {
@@ -144,28 +152,12 @@ impl<'a> NeedleBase<'a> {
         self.imgui_state.render(&self.state, &view)?;
         self.state.queue().present(texture);
         self.renderer.trim();
-        self.state.device().poll(wgpu::PollType::Wait {
-            timeout: None,
-            submission_index: None,
-        })?;
 
         Ok(())
     }
 
     /// Update render content for new frame
     fn update(&mut self, config: &NeedleConfig) -> NeedleErr<()> {
-        self.renderer
-            .update(&self.state, config, &self.clock_info)?;
-
-        let event = self.state.queue().submit([]);
-
-        self.state
-            .device()
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(event),
-                timeout: None,
-            })
-            .map(|_| ())
-            .map_err(|_| NeedleError::Other)
+        self.renderer.update(&self.state, config, &self.clock_info)
     }
 }

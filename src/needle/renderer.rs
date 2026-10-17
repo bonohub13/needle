@@ -11,11 +11,11 @@ use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct NeedleRenderer {
-    depth_texture: Texture,
     background: ShaderRenderer,
     overlays: Vec<OverlayRenderer>,
     pub clock: TextRenderer,
     pub fps: TextRenderer,
+    depth_texture: Texture,
     last_frame: Option<Instant>,
 }
 
