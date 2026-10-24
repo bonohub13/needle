@@ -87,6 +87,34 @@ impl<'a> Needle<'a> {
 
         Ok(())
     }
+
+    fn handle_keyevent(
+        base: &mut NeedleBase,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        event: &KeyEvent,
+    ) {
+        let KeyEvent {
+            state,
+            physical_key,
+            ..
+        } = event;
+
+        match physical_key {
+            PhysicalKey::Code(KeyCode::Escape) if *state == ElementState::Pressed => {
+                event_loop.exit()
+            }
+            PhysicalKey::Code(KeyCode::Space) if *state == ElementState::Pressed => {
+                if let Err(err) = base.start_clock() {
+                    log::error!("{err}");
+                    event_loop.exit();
+                }
+            }
+            PhysicalKey::Code(KeyCode::Insert) if *state == ElementState::Pressed => {
+                base.imgui_state.toggle_imgui();
+            }
+            _ => (),
+        }
+    }
 }
 
 impl<'a> ApplicationHandler for Needle<'a> {
@@ -138,42 +166,11 @@ impl<'a> ApplicationHandler for Needle<'a> {
 
         base.current_frame += 1;
         match event {
-            WindowEvent::CloseRequested
-            | WindowEvent::KeyboardInput {
-                event:
-                    KeyEvent {
-                        state: ElementState::Pressed,
-                        physical_key: PhysicalKey::Code(KeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => {
+            WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
-            WindowEvent::KeyboardInput {
-                event:
-                    KeyEvent {
-                        state: ElementState::Pressed,
-                        physical_key: PhysicalKey::Code(KeyCode::Space),
-                        ..
-                    },
-                ..
-            } => {
-                if let Err(e) = base.start_clock() {
-                    log::error!("{e}");
-                    event_loop.exit();
-                }
-            }
-            WindowEvent::KeyboardInput {
-                event:
-                    KeyEvent {
-                        state: ElementState::Pressed,
-                        physical_key: PhysicalKey::Code(KeyCode::Insert),
-                        ..
-                    },
-                ..
-            } => {
-                base.imgui_state.toggle_imgui();
+            WindowEvent::KeyboardInput { ref event, .. } => {
+                Self::handle_keyevent(base, event_loop, event)
             }
             WindowEvent::Resized(physical_size) => {
                 base.resize(&physical_size);
