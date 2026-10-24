@@ -23,6 +23,7 @@ impl NeedleRenderer {
     const OVERLAY_SIZE: [f32; 2] = [2.0; 2];
     const OVERLAY_OFFSET: [f32; 2] = [-1.0; 2];
     const OVERLAY_DEPTH: f32 = 0.05;
+    const TEXT_RENDERER_MARGIN: f32 = 5.0;
 
     pub fn new(
         window: Arc<Window>,
@@ -125,6 +126,7 @@ impl NeedleRenderer {
                         font: None,
                         font_size: window_size,
                         scale_factor: window_scale_factor as f32,
+                        margin: Self::TEXT_RENDERER_MARGIN,
                         format: state.surface_config().format,
                         depth_stencil: Some(depth_stencil_state.clone()),
                     };
@@ -145,6 +147,7 @@ impl NeedleRenderer {
                 font: config.time.font.clone(),
                 font_size: window_size,
                 scale_factor: window_scale_factor as f32,
+                margin: Self::TEXT_RENDERER_MARGIN,
                 format: state.surface_config().format,
                 depth_stencil: Some(depth_stencil_state.clone()),
             };
@@ -160,6 +163,7 @@ impl NeedleRenderer {
                 font: None,
                 font_size: window_size,
                 scale_factor: window_scale_factor as f32,
+                margin: Self::TEXT_RENDERER_MARGIN,
                 format: state.surface_config().format,
                 depth_stencil: Some(depth_stencil_state.clone()),
             };
@@ -242,6 +246,7 @@ impl NeedleRenderer {
                 font: None,
                 font_size: window_size,
                 scale_factor: window_scale_factor as f32,
+                margin: Self::TEXT_RENDERER_MARGIN,
                 format: state.surface_config().format,
                 depth_stencil: Some(depth_stencil_state.clone()),
             };
@@ -266,8 +271,6 @@ impl NeedleRenderer {
         config: &NeedleConfig,
         clock_info: &Time,
     ) -> NeedleErr<()> {
-        const TEXT_RENDERER_MARGIN: f32 = 5.0;
-
         let background = glm::vec4(
             config.background_color[0],
             config.background_color[1],
@@ -278,8 +281,7 @@ impl NeedleRenderer {
         self.background.write_buffer(&background, state.queue())?;
         self.clock.set_text(&clock_info.current_time());
         self.clock.set_config(&config.time.config);
-        self.clock.update(state);
-        self.clock.prepare(TEXT_RENDERER_MARGIN, state)?;
+        self.clock.update(state)?;
 
         if config.fps.enable {
             if let Some(last_frame) = self.last_frame {
@@ -302,8 +304,7 @@ impl NeedleRenderer {
             self.fps.set_text("");
         }
         self.fps.set_config(&config.fps.config);
-        self.fps.update(state);
-        self.fps.prepare(TEXT_RENDERER_MARGIN, state)?;
+        self.fps.update(state)?;
 
         if let Some(overlay_cfgs) = &config.overlays
             && overlay_cfgs.len() == self.overlays.len()
@@ -312,8 +313,7 @@ impl NeedleRenderer {
                 let overlay_data =
                     super::buffer::Overlay::new(&cfg.position, &cfg.size, &cfg.color);
                 overlay.write_buffer(&overlay_data, state.queue())?;
-                overlay.update(state);
-                overlay.prepare(TEXT_RENDERER_MARGIN, state)?;
+                overlay.update(state)?;
             }
         }
 
